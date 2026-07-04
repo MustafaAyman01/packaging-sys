@@ -33,8 +33,14 @@ export function Invoices({ data, update, updateStock, toast, org }) {
   const newInvNum = (type) => {
     const prefix = type === "sale" ? "INV" : "PUR";
     const year = new Date().getFullYear();
-    const count = data.invoices.filter((i) => i.type === type).length + 1;
-    return `${prefix}-${year}-${String(count).padStart(3, "0")}`;
+    const yearPrefix = `${prefix}-${year}-`;
+    const maxNum = data.invoices
+      .filter((i) => i.type === type && i.invoice_number && i.invoice_number.startsWith(yearPrefix))
+      .reduce((max, i) => {
+        const n = parseInt(i.invoice_number.slice(yearPrefix.length), 10);
+        return isNaN(n) ? max : Math.max(max, n);
+      }, 0);
+    return `${yearPrefix}${String(maxNum + 1).padStart(3, "0")}`;
   };
   const openNew = (type = "sale") => {
     setForm({
@@ -91,6 +97,18 @@ export function Invoices({ data, update, updateStock, toast, org }) {
     );
   const saveInvoice = () => {
     if (!items.some((i) => i.product_id)) return;
+    // Guard against duplicate invoice numbers (unique per type per org in the DB)
+    const dupNumber = data.invoices.some(
+      (i) => i.invoice_number === form.invoice_number && i.type === form.type && i.id !== form.id
+    );
+    if (dupNumber) {
+      toast("⚠️ رقم الفاتورة ده مستخدم قبل كده، تم توليد رقم جديد");
+      setForm((f) => ({
+        ...f,
+        invoice_number: newInvNum(form.type),
+      }));
+      return;
+    }
     // Check stock for sale invoices
     if (form.type === "sale") {
       const shortItems = items
