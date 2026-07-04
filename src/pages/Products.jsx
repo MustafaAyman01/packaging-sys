@@ -1,0 +1,675 @@
+import { useState } from "react";
+import { generateId, today } from "../utils/format";
+import { fc } from "../utils/format";
+
+export function Products({ data, update, getStockQty, toast }) {
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({});
+  const [manageType, setManageType] = useState(null); // "category" | "unit" | null
+  const [quickAddName, setQuickAddName] = useState("");
+  const [quickAddAbbr, setQuickAddAbbr] = useState("");
+  const [editingItemId, setEditingItemId] = useState(null);
+  const filtered = data.products.filter(
+    (p) =>
+      (!search || p.name.includes(search) || p.sku.includes(search)) &&
+      (!catFilter || p.category_id === catFilter)
+  );
+  const openNew = () => {
+    setEditing(null);
+    setForm({
+      sku: `PKG-${String(data.products.length + 1).padStart(3, "0")}`,
+      name: "",
+      category_id: data.categories[0]?.id,
+      unit_id: data.units[0]?.id,
+      cost_price: "",
+      sale_price: "",
+      min_stock_level: 50,
+      is_active: true,
+    });
+    setShowModal(true);
+  };
+  const openEdit = (p) => {
+    setEditing(p);
+    setForm({
+      ...p,
+    });
+    setShowModal(true);
+  };
+  const save = () => {
+    if (!form.name || !form.sale_price) return;
+    if (editing)
+      update(
+        "products",
+        data.products.map((p) =>
+          p.id === editing.id
+            ? {
+                ...form,
+                id: editing.id,
+              }
+            : p
+        )
+      );
+    else
+      update("products", [
+        ...data.products,
+        {
+          ...form,
+          id: generateId(),
+          created_at: today(),
+        },
+      ]);
+    setShowModal(false);
+    toast(editing ? "تم تعديل المنتج ✓" : "تم إضافة المنتج ✓");
+  };
+  const del = (id) => {
+    if (confirm("حذف المنتج؟")) {
+      update(
+        "products",
+        data.products.filter((p) => p.id !== id)
+      );
+      toast("تم الحذف");
+    }
+  };
+  const openManage = (type) => {
+    setManageType(type);
+    setEditingItemId(null);
+    setQuickAddName("");
+    setQuickAddAbbr("");
+  };
+  const resetManageForm = () => {
+    setEditingItemId(null);
+    setQuickAddName("");
+    setQuickAddAbbr("");
+  };
+  const startEditItem = (item) => {
+    setEditingItemId(item.id);
+    setQuickAddName(item.name);
+    setQuickAddAbbr(item.abbreviation || "");
+  };
+  const saveManageItem = () => {
+    if (!quickAddName.trim()) return;
+    if (manageType === "category") {
+      if (editingItemId) {
+        update(
+          "categories",
+          data.categories.map((c) =>
+            c.id === editingItemId
+              ? {
+                  ...c,
+                  name: quickAddName.trim(),
+                }
+              : c
+          )
+        );
+        toast("تم تعديل الفئة ✓");
+      } else {
+        const newCat = {
+          id: generateId(),
+          name: quickAddName.trim(),
+        };
+        update("categories", [...data.categories, newCat]);
+        setForm({
+          ...form,
+          category_id: newCat.id,
+        });
+        toast("تم إضافة الفئة ✓");
+      }
+    } else if (manageType === "unit") {
+      if (editingItemId) {
+        update(
+          "units",
+          data.units.map((u) =>
+            u.id === editingItemId
+              ? {
+                  ...u,
+                  name: quickAddName.trim(),
+                  abbreviation: quickAddAbbr.trim() || quickAddName.trim(),
+                }
+              : u
+          )
+        );
+        toast("تم تعديل وحدة القياس ✓");
+      } else {
+        const newUnit = {
+          id: generateId(),
+          name: quickAddName.trim(),
+          abbreviation: quickAddAbbr.trim() || quickAddName.trim(),
+        };
+        update("units", [...data.units, newUnit]);
+        setForm({
+          ...form,
+          unit_id: newUnit.id,
+        });
+        toast("تم إضافة وحدة القياس ✓");
+      }
+    }
+    resetManageForm();
+  };
+  const deleteManageItem = (item) => {
+    if (manageType === "category") {
+      const usedCount = data.products.filter((p) => p.category_id === item.id).length;
+      if (usedCount > 0) {
+        toast(`لا يمكن حذف هذه الفئة لأنها مستخدمة في ${usedCount} منتج`);
+        return;
+      }
+      if (!confirm(`حذف الفئة "${item.name}"؟`)) return;
+      update(
+        "categories",
+        data.categories.filter((c) => c.id !== item.id)
+      );
+      toast("تم الحذف");
+    } else if (manageType === "unit") {
+      const usedCount = data.products.filter((p) => p.unit_id === item.id).length;
+      if (usedCount > 0) {
+        toast(`لا يمكن حذف هذه الوحدة لأنها مستخدمة في ${usedCount} منتج`);
+        return;
+      }
+      if (!confirm(`حذف وحدة القياس "${item.name}"؟`)) return;
+      update(
+        "units",
+        data.units.filter((u) => u.id !== item.id)
+      );
+      toast("تم الحذف");
+    }
+    if (editingItemId === item.id) resetManageForm();
+  };
+  return (
+    <div>
+      <div
+        className="filter-row"
+        style={{
+          marginBottom: 16,
+        }}
+      >
+        <div
+          className="search-bar"
+          style={{
+            flex: 1,
+          }}
+        >
+          <span className="search-icon">🔍</span>
+          <input
+            placeholder="بحث بالاسم أو الكود..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <select
+          value={catFilter}
+          onChange={(e) => setCatFilter(e.target.value)}
+          style={{
+            width: 160,
+          }}
+        >
+          <option value="">كل الفئات</option>
+          {data.categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button className="btn btn-primary" onClick={openNew}>
+          + منتج جديد
+        </button>
+      </div>
+      <div className="card">
+        <table>
+          <thead>
+            <tr>
+              <th>الكود</th>
+              <th>الاسم</th>
+              <th>الفئة</th>
+              <th>الوحدة</th>
+              <th>سعر التكلفة</th>
+              <th>سعر البيع</th>
+              <th>المخزون</th>
+              <th>الحالة</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((p) => {
+              const qty = getStockQty(p.id);
+              const low = qty < p.min_stock_level;
+              return (
+                <tr key={p.id}>
+                  <td>
+                    <code
+                      style={{
+                        fontSize: 12,
+                        background: "var(--surface2)",
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {p.sku}
+                    </code>
+                  </td>
+                  <td
+                    style={{
+                      fontWeight: 500,
+                    }}
+                  >
+                    {p.name}
+                  </td>
+                  <td>{data.categories.find((c) => c.id === p.category_id)?.name || "—"}</td>
+                  <td>{data.units.find((u) => u.id === p.unit_id)?.name || "—"}</td>
+                  <td>{fc(p.cost_price)}</td>
+                  <td
+                    style={{
+                      fontWeight: 500,
+                    }}
+                  >
+                    {fc(p.sale_price)}
+                  </td>
+                  <td
+                    style={{
+                      fontWeight: 500,
+                      color: low ? "var(--red)" : "var(--green)",
+                    }}
+                  >
+                    {qty.toLocaleString()}
+                    {low ? " ⚠️" : ""}
+                  </td>
+                  <td>
+                    <span
+                      className="badge"
+                      style={{
+                        background: p.is_active ? "var(--green-bg)" : "var(--surface3)",
+                        color: p.is_active ? "var(--green)" : "var(--text3)",
+                      }}
+                    >
+                      {p.is_active ? "نشط" : "موقوف"}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>
+                        تعديل
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => del(p.id)}>
+                        حذف
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filtered.length === 0 && (
+          <div className="empty-state">
+            <div className="icon">📦</div>
+            <p>لا توجد منتجات</p>
+          </div>
+        )}
+      </div>
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">{editing ? "تعديل منتج" : "منتج جديد"}</span>
+              <button className="close-btn" onClick={() => setShowModal(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>كود المنتج (SKU)</label>
+                  <input
+                    value={form.sku || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        sku: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>اسم المنتج *</label>
+                  <input
+                    value={form.name || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>الفئة</label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                    }}
+                  >
+                    <select
+                      value={form.category_id || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          category_id: e.target.value,
+                        })
+                      }
+                      style={{
+                        flex: 1,
+                      }}
+                    >
+                      {data.categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      title="إضافة/تعديل/حذف الفئات"
+                      onClick={() => openManage("category")}
+                    >
+                      ⚙️
+                    </button>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>وحدة القياس</label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                    }}
+                  >
+                    <select
+                      value={form.unit_id || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          unit_id: e.target.value,
+                        })
+                      }
+                      style={{
+                        flex: 1,
+                      }}
+                    >
+                      {data.units.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      title="إضافة/تعديل/حذف وحدات القياس"
+                      onClick={() => openManage("unit")}
+                    >
+                      ⚙️
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="form-row form-row-3">
+                <div className="form-group">
+                  <label>سعر التكلفة</label>
+                  <input
+                    type="number"
+                    value={form.cost_price || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        cost_price: +e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>سعر البيع *</label>
+                  <input
+                    type="number"
+                    value={form.sale_price || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        sale_price: +e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>حد أدنى للمخزون</label>
+                  <input
+                    type="number"
+                    value={form.min_stock_level || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        min_stock_level: +e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>الحالة</label>
+                <select
+                  value={form.is_active ? "1" : "0"}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      is_active: e.target.value === "1",
+                    })
+                  }
+                >
+                  <option value="1">نشط</option>
+                  <option value="0">موقوف</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                إلغاء
+              </button>
+              <button className="btn btn-primary" onClick={save}>
+                حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {manageType &&
+        (() => {
+          const manageList = manageType === "category" ? data.categories : data.units;
+          const addInputs = [];
+          addInputs.push(
+            <input
+              key="name"
+              autoFocus={true}
+              placeholder={manageType === "category" ? "اسم الفئة" : "اسم الوحدة"}
+              value={quickAddName}
+              onChange={(e) => setQuickAddName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveManageItem()}
+              style={{
+                flex: 1,
+              }}
+            />
+          );
+          if (manageType === "unit") {
+            addInputs.push(
+              <input
+                key="abbr"
+                placeholder="الاختصار"
+                value={quickAddAbbr}
+                onChange={(e) => setQuickAddAbbr(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveManageItem()}
+                style={{
+                  width: 90,
+                }}
+              />
+            );
+          }
+          addInputs.push(
+            <button key="save-btn" type="button" className="btn btn-primary btn-sm" onClick={saveManageItem}>
+              {editingItemId ? "تحديث" : "+ إضافة"}
+            </button>
+          );
+          if (editingItemId) {
+            addInputs.push(
+              <button
+                key="cancel-btn"
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={resetManageForm}
+              >
+                إلغاء
+              </button>
+            );
+          }
+          const listRows = manageList.map((item, idx) => {
+            const nameNode =
+              manageType === "unit" && item.abbreviation ? (
+                <span>
+                  {item.name}{" "}
+                  <span
+                    style={{
+                      color: "var(--text3)",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    ({item.abbreviation})
+                  </span>
+                </span>
+              ) : (
+                <span>{item.name}</span>
+              );
+            const editBtn = (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEditItem(item)}>
+                تعديل
+              </button>
+            );
+            const delBtn = (
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => deleteManageItem(item)}>
+                حذف
+              </button>
+            );
+            const actionsBox = (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                }}
+              >
+                {editBtn}
+                {delBtn}
+              </div>
+            );
+            return (
+              <div
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 12px",
+                  borderTop: idx === 0 ? "none" : "1px solid var(--border)",
+                  background: editingItemId === item.id ? "var(--surface2)" : "transparent",
+                }}
+              >
+                {nameNode}
+                {actionsBox}
+              </div>
+            );
+          });
+          const emptyMsg = (
+            <div
+              style={{
+                padding: 16,
+                textAlign: "center",
+                color: "var(--text3)",
+                fontSize: 13,
+              }}
+            >
+              {manageType === "category" ? "لا توجد فئات بعد" : "لا توجد وحدات قياس بعد"}
+            </div>
+          );
+          const headerNode = (
+            <div className="modal-header">
+              <span className="modal-title">
+                {manageType === "category" ? "إدارة الفئات" : "إدارة وحدات القياس"}
+              </span>
+              <button className="close-btn" onClick={() => setManageType(null)}>
+                ×
+              </button>
+            </div>
+          );
+          const addRowNode = React.createElement(
+            "div",
+            {
+              style: {
+                display: "flex",
+                gap: 6,
+                marginBottom: 14,
+              },
+            },
+            ...addInputs
+          );
+          const listBoxNode = (
+            <div
+              style={{
+                maxHeight: 280,
+                overflowY: "auto",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+              }}
+            >
+              {listRows.length ? listRows : emptyMsg}
+            </div>
+          );
+          const bodyNode = (
+            <div className="modal-body">
+              {addRowNode}
+              {listBoxNode}
+            </div>
+          );
+          const footerNode = (
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setManageType(null)}>
+                إنهاء
+              </button>
+            </div>
+          );
+          const modalNode = (
+            <div
+              className="modal"
+              style={{
+                maxWidth: 420,
+              }}
+            >
+              {headerNode}
+              {bodyNode}
+              {footerNode}
+            </div>
+          );
+          return (
+            <div
+              className="modal-overlay"
+              style={{
+                zIndex: 200,
+              }}
+            >
+              {modalNode}
+            </div>
+          );
+        })()}
+    </div>
+  );
+}
