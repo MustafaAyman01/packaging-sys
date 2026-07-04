@@ -41,6 +41,12 @@ export function printInvoice(inv, data, org) {
   };
   const st = statusMap[inv.status] || statusMap.draft;
   const remaining = Math.max(0, inv.total_amount - inv.paid_amount);
+  const clientTotalDue =
+    inv.type === "sale" && inv.client_id
+      ? data.invoices
+          .filter((i) => i.type === "sale" && i.client_id === inv.client_id && i.status !== "cancelled")
+          .reduce((s, i) => s + Math.max(0, i.total_amount - i.paid_amount), 0)
+      : 0;
   let serial = 0;
   const rows = (inv.items || [])
     .map((item) => {
@@ -114,6 +120,7 @@ export function printInvoice(inv, data, org) {
   .t-final{background:#1a1814;padding:8px 10px;display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:#fff}
   .t-paid{background:#f0fdf4;padding:5px 10px;display:flex;justify-content:space-between;font-size:12px;color:#166534;font-weight:500}
   .t-remain{background:#fef2f2;padding:5px 10px;display:flex;justify-content:space-between;font-size:12.5px;color:#dc2626;font-weight:700}
+  .t-client-due{background:#fffbeb;padding:6px 10px;display:flex;justify-content:space-between;font-size:12px;color:#92400e;font-weight:700;border-top:1px dashed #e5e1d8}
 
   /* ─── FOOTER ─── */
   .footer{margin-top:auto;padding-top:4mm;border-top:1px solid #e5e1d8;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#9c9080}
@@ -202,6 +209,7 @@ export function printInvoice(inv, data, org) {
       <div class="t-final"><span>الإجمالي النهائي</span><span>${fc(inv.total_amount)}</span></div>
       <div class="t-paid"><span>✓ المبلغ المدفوع</span><span>${fc(inv.paid_amount)}</span></div>
       ${remaining > 0.01 ? `<div class="t-remain"><span>⏳ المبلغ المتبقي</span><span>${fc(remaining)}</span></div>` : ""}
+      ${clientTotalDue > 0.01 ? `<div class="t-client-due"><span>📌 إجمالي المستحق (كل الفواتير)</span><span>${fc(clientTotalDue)}</span></div>` : ""}
     </div>
   </div>
 

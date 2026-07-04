@@ -212,6 +212,14 @@ export function Invoices({ data, update, updateStock, toast, org }) {
   };
   const totals = calcTotals(items, form.discount_amount, form.tax_rate);
   const viewRemaining = viewInv ? viewInv.total_amount - viewInv.paid_amount : 0;
+  const clientTotalDue =
+    viewInv && viewInv.type === "sale" && viewInv.client_id
+      ? data.invoices
+          .filter(
+            (i) => i.type === "sale" && i.client_id === viewInv.client_id && i.status !== "cancelled"
+          )
+          .reduce((s, i) => s + Math.max(0, i.total_amount - i.paid_amount), 0)
+      : 0;
   return (
     <div>
       <div
@@ -915,8 +923,23 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                       fontWeight: 600,
                     }}
                   >
-                    <span>⏳ المتبقي</span>
+                    <span>⏳ المتبقي من الفاتورة دي</span>
                     <span>{fc(viewRemaining)}</span>
+                  </div>
+                )}
+                {viewInv.type === "sale" && viewInv.client_id && clientTotalDue > 0.01 && (
+                  <div
+                    className="totals-row"
+                    style={{
+                      color: "var(--amber)",
+                      fontWeight: 700,
+                      borderTop: "1px dashed var(--border2)",
+                      marginTop: 4,
+                      paddingTop: 8,
+                    }}
+                  >
+                    <span>📌 إجمالي المستحق على العميل (كل الفواتير)</span>
+                    <span>{fc(clientTotalDue)}</span>
                   </div>
                 )}
               </div>
