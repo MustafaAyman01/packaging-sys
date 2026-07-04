@@ -31,6 +31,20 @@ export function App({ features, session, profile, trialEndsAt }) {
     document.body.classList.toggle("sidebar-locked", sidebarOpen);
     return () => document.body.classList.remove("sidebar-locked");
   }, [sidebarOpen]);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("theme") === "dark" ? "dark" : "light";
+    } catch {
+      return "light";
+    }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {}
+  }, [theme]);
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const [org, setOrg] = useState(null);
   const [cloudReady, setCloudReady] = useState(!SUPABASE_ENABLED);
   const [cloudError, setCloudError] = useState(null);
@@ -765,6 +779,14 @@ export function App({ features, session, profile, trialEndsAt }) {
               <div className="topbar-title">{pageTitles[page] || page}</div>
             </div>
             <div className="topbar-actions">
+              <button
+                className="theme-toggle"
+                onClick={toggleTheme}
+                title={theme === "dark" ? "الوضع الفاتح" : "الوضع الغامق"}
+                aria-label="تبديل الثيم"
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
               {profile && (
                 <span
                   style={{

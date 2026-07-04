@@ -299,7 +299,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                   style={
                     overdue
                       ? {
-                          background: "#fff9f9",
+                          background: "var(--red-bg)",
                         }
                       : {}
                   }

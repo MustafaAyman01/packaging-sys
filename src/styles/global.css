@@ -31,19 +31,21 @@
 body {
   font-family: "IBM Plex Sans Arabic", sans-serif;
   direction: rtl;
-  background: #eef1f6;
+  background: var(--bg);
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 html {
   overflow-x: hidden;
 }
 
 :root {
-  /* ── Palette ── */
+  /* ── Palette (Light) ── */
   --bg: #eef1f6;
   --surface: #ffffff;
   --surface2: #f6f8fb;
   --surface3: #edf0f6;
+  --surface-hover: #f8f9fc;
   --border: #e1e5ed;
   --border2: #ccd3e0;
 
@@ -62,10 +64,17 @@ html {
   /* ── Status ── */
   --green: #0d9e6a;
   --green-bg: #e6f7f1;
+  --green-border: #9de8cc;
+  --green-hover: #c8f0e2;
   --red: #d63250;
   --red-bg: #fce8ec;
+  --red-border: #f5c0cb;
+  --red-hover: #f9d0d8;
   --amber: #c47f0a;
   --amber-bg: #fdf3e0;
+  --amber-border: #f0cc7a;
+  --amber-text: #7a4f00;
+  --green-text: #065f46;
   --blue: #1a5fbd;
   --blue-bg: #e8f0fd;
 
@@ -74,6 +83,88 @@ html {
   --radius-sm: 8px;
   --shadow: 0 1px 4px rgba(15, 21, 35, 0.06), 0 4px 16px rgba(15, 21, 35, 0.04);
   --shadow-md: 0 4px 20px rgba(15, 21, 35, 0.1);
+}
+
+/* ── Palette (Dark) ── */
+[data-theme="dark"] {
+  --bg: #0a0f1a;
+  --surface: #121a2b;
+  --surface2: #0e1524;
+  --surface3: #1a2438;
+  --surface-hover: #182238;
+  --border: #232f47;
+  --border2: #2e3c59;
+
+  --text: #e8ecf5;
+  --text2: #a8b2c7;
+  --text3: #6d7890;
+
+  --accent: #0d1f33;
+  --accent2: #091625;
+  --accent-teal: #14a3a3;
+  --accent-teal2: #189a9a;
+  --accent-light: #0f2b2b;
+
+  --green: #34d399;
+  --green-bg: #10261e;
+  --green-border: #1f6e52;
+  --green-hover: #143a2c;
+  --red: #f87171;
+  --red-bg: #2c151b;
+  --red-border: #7a3341;
+  --red-hover: #38191f;
+  --amber: #fbbf24;
+  --amber-bg: #2b220c;
+  --amber-border: #7a611f;
+  --amber-text: #fbbf24;
+  --green-text: #34d399;
+  --blue: #60a5fa;
+  --blue-bg: #142235;
+
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Smooth theme transition on key surfaces ── */
+.card,
+.stat-card,
+.topbar,
+.modal,
+.modal-header,
+.modal-footer,
+table,
+th,
+td,
+input,
+select,
+textarea,
+.tab,
+.btn-secondary,
+.totals-box,
+.tag {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* ── Theme toggle switch ── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: var(--surface2);
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
 }
 
 /* ── Layout ── */
@@ -269,18 +360,18 @@ html {
 .btn-danger {
   background: var(--red-bg);
   color: var(--red);
-  border: 1.5px solid #f5c0cb;
+  border: 1.5px solid var(--red-border);
 }
 .btn-danger:hover {
-  background: #f9d0d8;
+  background: var(--red-hover);
 }
 .btn-success {
   background: var(--green-bg);
   color: var(--green);
-  border: 1.5px solid #9de8cc;
+  border: 1.5px solid var(--green-border);
 }
 .btn-success:hover {
-  background: #c8f0e2;
+  background: var(--green-hover);
 }
 .btn-sm {
   padding: 6px 12px;
@@ -396,7 +487,7 @@ td {
   vertical-align: middle;
 }
 tr:hover td {
-  background: #f8f9fc;
+  background: var(--surface-hover);
 }
 tr:last-child td {
   border-bottom: none;
@@ -591,13 +682,13 @@ textarea {
 }
 .alert-warning {
   background: var(--amber-bg);
-  border-color: #f0cc7a;
-  color: #7a4f00;
+  border-color: var(--amber-border);
+  color: var(--amber-text);
 }
 .alert-success {
   background: var(--green-bg);
-  border-color: #9de8cc;
-  color: #065f46;
+  border-color: var(--green-border);
+  color: var(--green-text);
 }
 
 /* ── Divider ── */
@@ -706,7 +797,7 @@ textarea {
 /* ── Payment quick ── */
 .payment-quick {
   background: var(--green-bg);
-  border: 1.5px solid #9de8cc;
+  border: 1.5px solid var(--green-border);
   border-radius: var(--radius-sm);
   padding: 16px;
   margin-top: 14px;

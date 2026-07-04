@@ -141,8 +141,8 @@ export function Clients({ data, update, toast, org }) {
                   <span
                     className="badge"
                     style={{
-                      background: c.is_active ? "#dcfce7" : "#f3f4f6",
-                      color: c.is_active ? "#166534" : "#6b7280",
+                      background: c.is_active ? "var(--green-bg)" : "var(--surface3)",
+                      color: c.is_active ? "var(--green)" : "var(--text3)",
                     }}
                   >
                     {c.is_active ? "نشط" : "موقوف"}

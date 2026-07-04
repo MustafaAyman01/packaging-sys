@@ -1,11 +1,11 @@
 import { STATUS_LABELS } from "../constants/labels";
 
 const STATUS_COLORS = {
-  paid: { bg: "#e6f7f1", color: "#0d9e6a" },
-  partial: { bg: "#fdf3e0", color: "#c47f0a" },
-  confirmed: { bg: "#e8f0fd", color: "#1a5fbd" },
-  draft: { bg: "#eef0f4", color: "#4a5568" },
-  cancelled: { bg: "#fce8ec", color: "#d63250" },
+  paid: { bg: "var(--green-bg)", color: "var(--green)" },
+  partial: { bg: "var(--amber-bg)", color: "var(--amber)" },
+  confirmed: { bg: "var(--blue-bg)", color: "var(--blue)" },
+  draft: { bg: "var(--surface3)", color: "var(--text2)" },
+  cancelled: { bg: "var(--red-bg)", color: "var(--red)" },
 };
 
 export function StatusBadge({ status }) {
