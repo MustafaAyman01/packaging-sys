@@ -87,7 +87,9 @@ export function Dashboard({ data, setPage, getStockQty }) {
               {s.icon}
             </div>
             <div className="stat-label">{s.label}</div>
-            <div className="stat-value">{s.value}</div>
+            <div className="stat-value" title={s.value}>
+              {s.value}
+            </div>
             <div className="stat-sub">{s.sub}</div>
           </div>
         ))}

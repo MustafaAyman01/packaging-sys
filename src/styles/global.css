@@ -426,6 +426,8 @@ textarea,
     transform 0.2s;
   position: relative;
   overflow: hidden;
+  container-type: inline-size;
+  min-width: 0;
 }
 .stat-card:hover {
   box-shadow: var(--shadow-md);
@@ -438,14 +440,35 @@ textarea,
   letter-spacing: 0.07em;
   text-transform: uppercase;
   margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .stat-value {
   font-size: 22px;
   font-weight: 800;
   color: var(--text);
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.02em;
   font-feature-settings: "tnum";
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* الخط يصغّر تلقائيًا مع ضيق الكارت، بدل ما الرقم يتقطع أو يخرج بره حدوده */
+@container (max-width: 175px) {
+  .stat-value {
+    font-size: 18px;
+  }
+}
+@container (max-width: 135px) {
+  .stat-value {
+    font-size: 15.5px;
+  }
+}
+@container (max-width: 105px) {
+  .stat-value {
+    font-size: 13px;
+  }
 }
 .stat-sub {
   font-size: 11px;
@@ -920,9 +943,6 @@ textarea {
   }
   .stat-card {
     padding: 10px 10px 8px;
-  }
-  .stat-value {
-    font-size: 17px !important;
   }
   .card-body,
   .modal-body {
