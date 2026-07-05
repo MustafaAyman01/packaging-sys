@@ -11,6 +11,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [viewInv, setViewInv] = useState(null);
   const [form, setForm] = useState({});
   const [items, setItems] = useState([]);
@@ -104,6 +105,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
       })
     );
   const saveInvoice = async () => {
+    if (saving) return; // منع الضغط المتكرر على "حفظ" أثناء تنفيذ عملية سابقة
     if (!items.some((i) => i.product_id)) return;
     // Guard against duplicate invoice numbers (unique per type per org in the DB)
     const dupNumber = data.invoices.some(
@@ -136,59 +138,65 @@ export function Invoices({ data, update, updateStock, toast, org }) {
           return;
       }
     }
-    const totals = calcTotals(items, form.discount_amount, form.tax_rate);
-    const invoiceItems = items
-      .filter((i) => i.product_id)
-      .map((i) => {
-        const prod = data.products.find((p) => p.id === i.product_id);
-        return {
-          ...i,
-          product_name: prod?.name || "",
-          product_sku: prod?.sku || "",
-        };
-      });
-    let invoiceNumber = form.invoice_number;
-    let errors = [];
-    let attempt = 0;
-    const previousInvoices = data.invoices;
-    // نجيب الرقم الحقيقي من السيرفر مباشرة قبل أول محاولة حفظ، بدل ما نعتمد
-    // على الرقم المعروض في الشاشة اللي ممكن يكون لسه قديم/مؤقت
-    if (org?.id) {
-      invoiceNumber = await fetchNextInvoiceNumber(org.id, form.type);
-    }
-    while (attempt < 3) {
-      const inv = {
-        ...form,
-        ...totals,
-        invoice_number: invoiceNumber,
-        id: generateId(),
-        paid_amount: form.status === "paid" ? totals.total_amount : 0,
-        items: invoiceItems,
-        created_at: today(),
-      };
-      errors = await update("invoices", [...previousInvoices, inv]);
-      if (!errors || !errors.length) {
-        invoiceItems.forEach((item) => {
-          updateStock(item.product_id, form.type === "sale" ? -item.quantity : item.quantity);
+    setSaving(true);
+    try {
+      const totals = calcTotals(items, form.discount_amount, form.tax_rate);
+      const invoiceItems = items
+        .filter((i) => i.product_id)
+        .map((i) => {
+          const prod = data.products.find((p) => p.id === i.product_id);
+          return {
+            ...i,
+            product_name: prod?.name || "",
+            product_sku: prod?.sku || "",
+          };
         });
-        setShowModal(false);
-        toast("تم حفظ الفاتورة ✓");
-        return;
-      }
-      // فشل الحفظ فعليًا — نرجّع القائمة زي ما كانت ومنلمسش المخزون
-      update("invoices", previousInvoices);
-      const isDupNumber = /invoice_number|duplicate key/i.test(errors[0].message || "");
-      if (isDupNumber && org?.id) {
-        // رقم الفاتورة اتعارض مع حاجة موجودة فعليًا في قاعدة البيانات (زي بيانات
-        // اتضافت من SQL مباشرة) — نجيب رقم حقيقي من السيرفر ونجرب تاني تلقائي
+      let invoiceNumber = form.invoice_number;
+      let errors = [];
+      let attempt = 0;
+      const previousInvoices = data.invoices;
+      // نجيب الرقم الحقيقي من السيرفر مباشرة قبل أول محاولة حفظ، بدل ما نعتمد
+      // على الرقم المعروض في الشاشة اللي ممكن يكون لسه قديم/مؤقت
+      if (org?.id) {
         invoiceNumber = await fetchNextInvoiceNumber(org.id, form.type);
-        attempt++;
-        continue;
       }
-      break;
+      while (attempt < 3) {
+        const inv = {
+          ...form,
+          ...totals,
+          invoice_number: invoiceNumber,
+          id: generateId(),
+          paid_amount: form.status === "paid" ? totals.total_amount : 0,
+          items: invoiceItems,
+          created_at: today(),
+        };
+        errors = await update("invoices", [...previousInvoices, inv]);
+        if (!errors || !errors.length) {
+          invoiceItems.forEach((item) => {
+            updateStock(item.product_id, form.type === "sale" ? -item.quantity : item.quantity);
+          });
+          setShowModal(false);
+          toast("تم حفظ الفاتورة ✓");
+          return;
+        }
+        // فشل الحفظ فعليًا — نرجّع القائمة زي ما كانت ومنلمسش المخزون
+        // (بننتظر الرجوع يخلص قبل أي محاولة تانية عشان منسبقش بعض)
+        await update("invoices", previousInvoices);
+        const isDupNumber = /invoice_number|duplicate key/i.test(errors[0].message || "");
+        if (isDupNumber && org?.id) {
+          // رقم الفاتورة اتعارض مع حاجة موجودة فعليًا في قاعدة البيانات (زي بيانات
+          // اتضافت من SQL مباشرة) — نجيب رقم حقيقي من السيرفر ونجرب تاني تلقائي
+          invoiceNumber = await fetchNextInvoiceNumber(org.id, form.type);
+          attempt++;
+          continue;
+        }
+        break;
+      }
+      toast(`⚠️ فشل حفظ الفاتورة ولم يتم تعديل المخزون: ${errors[0]?.message || "خطأ غير معروف"}`);
+      setForm((f) => ({ ...f, invoice_number: invoiceNumber }));
+    } finally {
+      setSaving(false);
     }
-    toast(`⚠️ فشل حفظ الفاتورة ولم يتم تعديل المخزون: ${errors[0]?.message || "خطأ غير معروف"}`);
-    setForm((f) => ({ ...f, invoice_number: invoiceNumber }));
   };
 
   // Change invoice status
@@ -789,8 +797,8 @@ export function Invoices({ data, update, updateStock, toast, org }) {
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                 إلغاء
               </button>
-              <button className="btn btn-primary" onClick={saveInvoice}>
-                💾 حفظ الفاتورة
+              <button className="btn btn-primary" disabled={saving} onClick={saveInvoice}>
+                💾 {saving ? "جاري الحفظ..." : "حفظ الفاتورة"}
               </button>
             </div>
           </div>

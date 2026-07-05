@@ -354,6 +354,7 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
       });
     }
   });
+  const failedIds = new Set();
   if (toUpsert.length) {
     const { error } = await sb.from(cfg.table).upsert(toUpsert);
     if (error) {
@@ -363,6 +364,9 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
         op: "upsert",
         message: error.message,
       });
+      // مهم: لو فشل حفظ الصف الأساسي، لازم نستبعده من أي معالجة تالية (زي بنود
+      // الفاتورة) عشان منحاولش نربط بيانات بصف مش موجود فعليًا في قاعدة البيانات
+      toUpsert.forEach((r) => failedIds.add(r.id));
     }
   }
   if (toDelete.length) {
@@ -385,6 +389,7 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
   }
   if (cfg.hasItems) {
     for (const [id, item] of newMap) {
+      if (failedIds.has(id)) continue; // الفاتورة نفسها فشلت، منحاولش نسجل بنودها
       const old = oldMap.get(id);
       const oldItemsArr = old?.items || [];
       const newItemsArr = item.items || [];
