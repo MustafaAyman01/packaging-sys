@@ -8,6 +8,7 @@ export const EMPTY_DATA_TEMPLATE = {
   suppliers: [],
   stock_levels: [],
   stock_movements: [],
+  manufacturing_orders: [],
   invoices: [],
   payments: [],
   expenses: [],

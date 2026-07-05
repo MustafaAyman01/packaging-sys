@@ -64,6 +64,25 @@ export const SYNC_TABLES = {
     table: "stock_movements",
     fields: ["product_id", "movement_type", "quantity", "unit_cost", "notes", "reference_type", "created_at"],
   },
+  manufacturing_orders: {
+    table: "manufacturing_orders",
+    fields: [
+      "order_number",
+      "order_date",
+      "material_product_id",
+      "material_quantity_used",
+      "material_unit_cost",
+      "material_cost_total",
+      "expense_items",
+      "expenses_total",
+      "total_cost",
+      "output_product_id",
+      "output_quantity",
+      "cost_per_unit",
+      "notes",
+      "created_at",
+    ],
+  },
   invoices: {
     table: "invoices",
     fields: [
@@ -162,6 +181,7 @@ const SYNC_ORDER = [
   "stock_levels",
   "employees",
   "stock_movements",
+  "manufacturing_orders",
   "invoices",
   "payments",
   "expenses",
@@ -267,6 +287,8 @@ export async function pushInitialData(orgId, localData) {
         "employee_id",
         "invoice_id",
         "expense_id",
+        "material_product_id",
+        "output_product_id",
       ].forEach((fk) => {
         if (row[fk]) row[fk] = mapId(row[fk]);
       });

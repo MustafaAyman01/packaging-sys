@@ -181,6 +181,7 @@ export const INITIAL_DATA = {
       quantity: 45,
     },
   ],
+  manufacturing_orders: [],
   stock_movements: [
     {
       id: "sm1",

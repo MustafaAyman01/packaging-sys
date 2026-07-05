@@ -3,6 +3,7 @@ import { Toast } from "../components/Toast";
 import { Dashboard } from "../pages/Dashboard";
 import { Products } from "../pages/Products";
 import { Stock } from "../pages/Stock";
+import { ManufacturingOrders } from "../pages/ManufacturingOrders";
 import { Invoices } from "../pages/Invoices";
 import { Clients } from "../pages/Clients";
 import { Suppliers } from "../pages/Suppliers";
@@ -204,6 +205,7 @@ export function App({ features, session, profile, trialEndsAt }) {
       "payments",
       "invoices",
       // invoices cascade-deletes invoice_items
+      "manufacturing_orders",
       "stock_movements",
       "stock_levels",
       "salary_payments",
@@ -362,6 +364,14 @@ export function App({ features, session, profile, trialEndsAt }) {
       roles: ["owner", "admin", "warehouse"],
     },
     {
+      id: "manufacturing_orders",
+      label: "أوامر التصنيع",
+      icon: "🏗️",
+      group: "المخزون",
+      feature: "core",
+      roles: ["owner", "admin", "warehouse"],
+    },
+    {
       id: "suppliers",
       label: "الموردون",
       icon: "🏭",
@@ -453,6 +463,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     stock: (
       <Stock data={data} update={update} getStockQty={getStockQty} updateStock={updateStock} toast={toast} />
     ),
+    manufacturing_orders: <ManufacturingOrders data={data} update={update} updateStock={updateStock} toast={toast} />,
     invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} />,
     clients: <Clients data={data} update={update} toast={toast} org={org} />,
     suppliers: <Suppliers data={data} update={update} toast={toast} org={org} />,
