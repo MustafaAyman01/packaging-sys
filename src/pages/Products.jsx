@@ -115,7 +115,7 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
     const movement = {
       id: generateId(),
       product_id: editing.id,
-      movement_type: isWaste ? "waste" : "surplus",
+      movement_type: isWaste ? "out" : "in",
       quantity: qty,
       unit_cost: cost,
       reference_type: isWaste ? "waste" : "surplus",

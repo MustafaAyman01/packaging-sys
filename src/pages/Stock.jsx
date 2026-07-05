@@ -197,7 +197,11 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
                               label: "➕ زيادة",
                             },
                           };
-                          const c = map[m.movement_type] || map.in;
+                          // هالك/زيادة بتتسجل بنوع in/out أصلي (عشان قيد قاعدة البيانات)
+                          // لكن بنميّزها هنا عن طريق reference_type
+                          const c =
+                            map[m.reference_type === "waste" || m.reference_type === "surplus" ? m.reference_type : m.movement_type] ||
+                            map.in;
                           return (
                             <span
                               className="badge"
