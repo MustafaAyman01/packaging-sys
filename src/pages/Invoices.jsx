@@ -151,6 +151,11 @@ export function Invoices({ data, update, updateStock, toast, org }) {
     let errors = [];
     let attempt = 0;
     const previousInvoices = data.invoices;
+    // نجيب الرقم الحقيقي من السيرفر مباشرة قبل أول محاولة حفظ، بدل ما نعتمد
+    // على الرقم المعروض في الشاشة اللي ممكن يكون لسه قديم/مؤقت
+    if (org?.id) {
+      invoiceNumber = await fetchNextInvoiceNumber(org.id, form.type);
+    }
     while (attempt < 3) {
       const inv = {
         ...form,
