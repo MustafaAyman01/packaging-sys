@@ -211,15 +211,21 @@ export function Dashboard({ data, setPage, getStockQty }) {
         className="card"
         style={{
           marginBottom: 20,
+          overflow: "visible",
         }}
       >
         <div className="card-header">
           <span className="card-title">🔍 استعلام سريع عن سعر ورصيد منتج</span>
         </div>
-        <div className="card-body">
+        <div
+          className="card-body"
+          style={{
+            overflow: "visible",
+          }}
+        >
           <div
             style={{
-              maxWidth: 420,
+              maxWidth: 480,
               marginBottom: lookupProduct ? 16 : 0,
             }}
           >
