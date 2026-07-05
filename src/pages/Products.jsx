@@ -2,7 +2,7 @@ import { useState } from "react";
 import { generateId, today } from "../utils/format";
 import { fc } from "../utils/format";
 
-export function Products({ data, update, getStockQty, toast }) {
+export function Products({ data, update, updateStock, getStockQty, toast }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -12,6 +12,24 @@ export function Products({ data, update, getStockQty, toast }) {
   const [quickAddName, setQuickAddName] = useState("");
   const [quickAddAbbr, setQuickAddAbbr] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
+  const [adjForm, setAdjForm] = useState({
+    reason: "waste",
+    quantity: "",
+    unit_cost: "",
+    notes: "",
+  });
+  // آخر سعر تكلفة اتسجل فعليًا لهذا المنتج من فواتير الشراء (مش سعر التكلفة الثابت في بطاقة المنتج)
+  const getLastPurchaseCost = (productId) => {
+    const rows = data.invoices
+      .filter((i) => i.type === "purchase" && i.status !== "cancelled")
+      .flatMap((i) =>
+        (i.items || [])
+          .filter((it) => it.product_id === productId)
+          .map((it) => ({ unit_price: it.unit_price, sortKey: `${i.invoice_date || ""}_${i.created_at || ""}` }))
+      )
+      .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    return rows[0]?.unit_price ?? null;
+  };
   const filtered = data.products.filter(
     (p) =>
       (!search || p.name.includes(search) || p.sku.includes(search)) &&
@@ -35,6 +53,13 @@ export function Products({ data, update, getStockQty, toast }) {
     setEditing(p);
     setForm({
       ...p,
+    });
+    const lastCost = getLastPurchaseCost(p.id);
+    setAdjForm({
+      reason: "waste",
+      quantity: "",
+      unit_cost: lastCost ?? p.cost_price ?? "",
+      notes: "",
     });
     setShowModal(true);
   };
@@ -72,6 +97,44 @@ export function Products({ data, update, getStockQty, toast }) {
       );
       toast("تم الحذف");
     }
+  };
+  const submitAdjustment = async () => {
+    if (!editing || !adjForm.quantity || +adjForm.quantity <= 0) return;
+    const qty = +adjForm.quantity;
+    const cost = +adjForm.unit_cost || 0;
+    const isWaste = adjForm.reason === "waste";
+    const currentQty = getStockQty(editing.id);
+    if (isWaste && currentQty < qty) {
+      if (
+        !confirm(
+          `⚠️ الكمية المطلوب تسجيلها كهالك (${qty}) أكبر من المخزون الحالي (${currentQty}).\nهل تريد الاستمرار؟`
+        )
+      )
+        return;
+    }
+    const movement = {
+      id: generateId(),
+      product_id: editing.id,
+      movement_type: isWaste ? "waste" : "surplus",
+      quantity: qty,
+      unit_cost: cost,
+      reference_type: isWaste ? "waste" : "surplus",
+      notes: adjForm.notes || (isWaste ? "هالك" : "زيادة جرد"),
+      created_at: today(),
+    };
+    const errors = await update("stock_movements", [...data.stock_movements, movement]);
+    if (errors && errors.length) {
+      toast(`⚠️ فشل تسجيل التسوية ولم يتم تعديل المخزون: ${errors[0].message}`);
+      return;
+    }
+    updateStock(editing.id, isWaste ? -qty : qty);
+    setAdjForm({
+      reason: "waste",
+      quantity: "",
+      unit_cost: cost,
+      notes: "",
+    });
+    toast(isWaste ? "تم تسجيل الهالك وخصمه من المخزون ✓" : "تم تسجيل الزيادة وإضافتها للمخزون ✓");
   };
   const openManage = (type) => {
     setManageType(type);
@@ -474,6 +537,108 @@ export function Products({ data, update, getStockQty, toast }) {
                   <option value="0">موقوف</option>
                 </select>
               </div>
+              {editing && (
+                <div
+                  style={{
+                    marginTop: 18,
+                    paddingTop: 16,
+                    borderTop: "1px dashed var(--border2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <label
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ⚖️ تسوية مخزون سريعة (هالك / زيادة)
+                    </label>
+                    <span
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--text3)",
+                      }}
+                    >
+                      الرصيد الحالي: {getStockQty(editing.id).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="form-row form-row-3">
+                    <div className="form-group">
+                      <label>نوع التسوية</label>
+                      <select
+                        value={adjForm.reason}
+                        onChange={(e) =>
+                          setAdjForm({
+                            ...adjForm,
+                            reason: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="waste">🗑️ هالك (خصم من المخزون)</option>
+                        <option value="surplus">➕ زيادة (إضافة للمخزون)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>الكمية</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={adjForm.quantity}
+                        onChange={(e) =>
+                          setAdjForm({
+                            ...adjForm,
+                            quantity: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>تكلفة الوحدة (ج.م)</label>
+                      <input
+                        type="number"
+                        value={adjForm.unit_cost}
+                        onChange={(e) =>
+                          setAdjForm({
+                            ...adjForm,
+                            unit_cost: e.target.value,
+                          })
+                        }
+                        title="اتحسبت تلقائيًا من آخر فاتورة شراء لهذا المنتج، وتقدر تعدلها"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>ملاحظات (اختياري)</label>
+                    <input
+                      value={adjForm.notes}
+                      placeholder={adjForm.reason === "waste" ? "مثال: تلف أثناء التصنيع" : "مثال: فرق جرد"}
+                      onChange={(e) =>
+                        setAdjForm({
+                          ...adjForm,
+                          notes: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div
+                    style={{
+                      textAlign: "left",
+                    }}
+                  >
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={submitAdjustment}>
+                      تسجيل التسوية
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>

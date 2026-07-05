@@ -449,7 +449,7 @@ export function App({ features, session, profile, trialEndsAt }) {
   }, [features, myRole]);
   const pages = {
     dashboard: <Dashboard data={data} setPage={setPage} getStockQty={getStockQty} />,
-    products: <Products data={data} update={update} getStockQty={getStockQty} toast={toast} />,
+    products: <Products data={data} update={update} updateStock={updateStock} getStockQty={getStockQty} toast={toast} />,
     stock: (
       <Stock data={data} update={update} getStockQty={getStockQty} updateStock={updateStock} toast={toast} />
     ),

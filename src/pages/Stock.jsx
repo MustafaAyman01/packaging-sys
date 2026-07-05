@@ -186,6 +186,16 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
                               color: "var(--text2)",
                               label: "⚖️ تسوية",
                             },
+                            waste: {
+                              bg: "var(--red-bg)",
+                              color: "var(--red)",
+                              label: "🗑️ هالك",
+                            },
+                            surplus: {
+                              bg: "var(--green-bg)",
+                              color: "var(--green)",
+                              label: "➕ زيادة",
+                            },
                           };
                           const c = map[m.movement_type] || map.in;
                           return (
