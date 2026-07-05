@@ -134,7 +134,7 @@ export function ProductPicker({ products, units, value, onSelect, placeholder, r
             border: "1.5px solid var(--border2)",
             borderRadius: "var(--radius-sm)",
             boxShadow: "var(--shadow-md)",
-            maxHeight: 320,
+            maxHeight: 400,
             overflowY: "auto",
             zIndex: 300,
           }}
