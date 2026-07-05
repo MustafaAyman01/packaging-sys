@@ -51,7 +51,7 @@ export function App({ features, session, profile, trialEndsAt }) {
   useEffect(() => {
     if (SUPABASE_ENABLED && profile) {
       sb.from("organizations")
-        .select("name,name_ar,logo_url")
+        .select("id,name,name_ar,logo_url")
         .eq("id", profile.org_id)
         .single()
         .then(({ data }) => {
