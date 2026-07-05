@@ -44,6 +44,7 @@ export const ACTIVITY_TABLE_LABELS = {
   suppliers: "الموردون",
   stock_levels: "أرصدة المخزون",
   stock_movements: "حركة المخزون",
+  manufacturing_orders: "أوامر التصنيع",
   invoices: "الفواتير",
   payments: "المدفوعات",
   expenses: "المصروفات",
