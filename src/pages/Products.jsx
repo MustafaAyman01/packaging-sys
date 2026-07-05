@@ -264,7 +264,7 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
         </table>
         {filtered.length === 0 && (
           <div className="empty-state">
-            <div className="icon">📦</div>
+            <div className="icon">👕</div>
             <p>لا توجد منتجات</p>
           </div>
         )}

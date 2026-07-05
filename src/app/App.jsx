@@ -276,7 +276,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `backsystem-backup-${today()}.json`;
+    a.download = `factory-backup-${today()}.json`;
     a.click();
     toast("تم تصدير البيانات ✓");
   };
@@ -350,7 +350,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     {
       id: "products",
       label: "المنتجات",
-      icon: "📦",
+      icon: "👕",
       group: "المخزون",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales", "warehouse"],
@@ -509,7 +509,7 @@ export function App({ features, session, profile, trialEndsAt }) {
               fontSize: 38,
             }}
           >
-            📦
+            👖
           </div>
           <div
             style={{
@@ -597,12 +597,12 @@ export function App({ features, session, profile, trialEndsAt }) {
                   }}
                 />
               ) : (
-                "📦"
+                "👖"
               )}
             </div>
             <div>
-              <div className="logo-title">{org?.name_ar || org?.name || "باك سيستم"}</div>
-              <div className="logo-sub">إدارة التعبئة والتغليف</div>
+              <div className="logo-title">{org?.name_ar || org?.name || "مصنع الملابس"}</div>
+              <div className="logo-sub">نظام إدارة مصنع الملابس</div>
             </div>
             <button
               className="sidebar-close-btn"

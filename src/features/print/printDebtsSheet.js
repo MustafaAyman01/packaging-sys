@@ -42,7 +42,7 @@ td{padding:7px 8px;border-bottom:1px solid #e5e1d8}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>كشف مديونيات شامل</h1>
-<div class="sub">${org?.name_ar || org?.name || "باك سيستم"} — تاريخ الطباعة: ${fd(today())}</div>
+<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — تاريخ الطباعة: ${fd(today())}</div>
 <h2>مستحقات على العملاء (مدين)</h2>
 <table><thead><tr><th>#</th><th>العميل</th><th>الهاتف</th><th>المبلغ المستحق</th></tr></thead>
 <tbody>${clientRows || `<tr><td colspan="4" style="text-align:center;color:#9c9080">لا توجد مديونيات</td></tr>`}</tbody></table>

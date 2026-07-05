@@ -36,7 +36,7 @@ td{padding:7px 8px;border-bottom:1px solid #e5e1d8}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>كشف مرتبات شهر ${month}</h1>
-<div class="sub">${org?.name_ar || org?.name || "باك سيستم"} — عدد الموظفين المصروف لهم: ${payments.length} — تاريخ الطباعة: ${fd(today())}</div>
+<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — عدد الموظفين المصروف لهم: ${payments.length} — تاريخ الطباعة: ${fd(today())}</div>
 <table><thead><tr><th>#</th><th>الموظف</th><th>الأساسي</th><th>أوفر تايم</th><th>خصم حضور</th><th>جزاءات</th><th>سلفة</th><th>الصافي</th></tr></thead>
 <tbody>${rows}</tbody></table>
 <div class="final">إجمالي المرتبات الصافية المصروفة: ${fc(totalNet)}</div>

@@ -1,14 +1,14 @@
 import { fc, fd } from "../../utils/format";
 
 export function printInvoice(inv, data, org) {
-  const companyName = org?.name_ar || org?.name || "باك سيستم";
-  const companySub = "معرض التعبئة والتغليف";
+  const companyName = org?.name_ar || org?.name || "مصنع الملابس";
+  const companySub = "مصنع وتوريد الملابس الجاهزة";
   const companyLogoHtml = org?.logo_url
     ? `<img src="${org.logo_url}" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
-    : "📦";
+    : "👖";
   const footerLogoHtml = org?.logo_url
     ? `<img src="${org.logo_url}" alt="logo" style="height:16px;vertical-align:middle;border-radius:3px;margin-left:4px">`
-    : "📦";
+    : "👖";
   const client = data.clients.find((c) => c.id === inv.client_id);
   const supplier = data.suppliers.find((s) => s.id === inv.supplier_id);
   const party = inv.type === "sale" ? client : supplier;

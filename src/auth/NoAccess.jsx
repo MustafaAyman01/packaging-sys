@@ -2,7 +2,7 @@ import { sb } from "../services/supabaseClient";
 
 export function NoAccess({ session, errorType, onRetry }) {
   const isConnIssue = errorType === "timeout" || errorType === "network" || errorType === "error";
-  const title = isConnIssue ? "تعذّر تحميل بيانات الحساب" : "باك سيستم";
+  const title = isConnIssue ? "تعذّر تحميل بيانات الحساب" : "مصنع الملابس";
   const message =
     errorType === "timeout"
       ? "الاتصال بالسحابة بياخد وقت أطول من المعتاد — على الأغلب الإنترنت ضعيف أو غير مستقر حاليًا."

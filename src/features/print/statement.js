@@ -78,7 +78,7 @@ td{padding:8px 10px;border-bottom:1px solid #e5e1d8}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>${title}: ${party.name}</h1>
-<div class="sub">${org?.name_ar || org?.name || "باك سيستم"} — تاريخ الطباعة: ${fd(today())}</div>
+<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — تاريخ الطباعة: ${fd(today())}</div>
 <table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead>
 <tbody>${rows}</tbody></table>
 <div class="final">الرصيد النهائي: ${fc(finalBalance)} ${finalBalance > 0.01 ? (partyType === "client" ? "(مستحق من العميل)" : "(مستحق له)") : ""}</div>

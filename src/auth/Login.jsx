@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sb } from "../services/supabaseClient";
 
 export function Login({ onLogin }) {
@@ -6,6 +6,25 @@ export function Login({ onLogin }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [brand, setBrand] = useState(null); // { name, logo_url } لو تم جلب بيانات المصنع بنجاح
+
+  useEffect(() => {
+    // محاولة جلب اسم وشعار المصنع من الإعدادات (بيانات الشركة) لعرضها هنا قبل تسجيل الدخول
+    // لو الصلاحيات (RLS) مش سامحة بالقراءة من غير تسجيل دخول، هيفضل الشعار الافتراضي زي ما هو
+    (async () => {
+      try {
+        const { data, error } = await sb
+          .from("organizations")
+          .select("name,name_ar,logo_url")
+          .limit(1)
+          .single();
+        if (!error && data) setBrand(data);
+      } catch (e) {
+        // تجاهل بصمت — هيتعرض الاسم/الشعار الافتراضي
+      }
+    })();
+  }, []);
+
   const handleSignIn = async () => {
     setError("");
     setLoading(true);
@@ -49,13 +68,28 @@ export function Login({ onLogin }) {
             color: "#fff",
           }}
         >
-          <div
-            style={{
-              fontSize: 40,
-            }}
-          >
-            📦
-          </div>
+          {brand?.logo_url ? (
+            <img
+              src={brand.logo_url}
+              alt="logo"
+              style={{
+                width: 56,
+                height: 56,
+                objectFit: "cover",
+                borderRadius: 12,
+                margin: "0 auto",
+                display: "block",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                fontSize: 40,
+              }}
+            >
+              👖
+            </div>
+          )}
           <div
             style={{
               fontSize: 20,
@@ -63,7 +97,7 @@ export function Login({ onLogin }) {
               marginTop: 8,
             }}
           >
-            باك سيستم
+            {brand?.name_ar || brand?.name || "مصنع الملابس"}
           </div>
           <div
             style={{
@@ -72,7 +106,7 @@ export function Login({ onLogin }) {
               marginTop: 4,
             }}
           >
-            إدارة التعبئة والتغليف
+            نظام إدارة مصنع الملابس
           </div>
         </div>
         <div

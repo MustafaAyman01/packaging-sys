@@ -103,7 +103,7 @@ export function RedeemInvite() {
               fontSize: 40,
             }}
           >
-            📦
+            👖
           </div>
           <div
             style={{

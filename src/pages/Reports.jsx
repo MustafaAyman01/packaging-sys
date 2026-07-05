@@ -726,7 +726,7 @@ export function Reports({ data, getStockQty, org }) {
             </table>
             {productSales.length === 0 && (
               <div className="empty-state">
-                <div className="icon">📦</div>
+                <div className="icon">👕</div>
                 <p>لا توجد مبيعات في هذه الفترة</p>
               </div>
             )}
