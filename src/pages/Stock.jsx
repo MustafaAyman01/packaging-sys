@@ -271,6 +271,9 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
                     });
                   }}
                   renderExtra={(p) => "\u0627\u0644\u0645\u062E\u0632\u0648\u0646: " + getStockQty(p.id)}
+                  data={data}
+                  update={update}
+                  toast={toast}
                 />
               </div>
               <div className="form-row form-row-2">

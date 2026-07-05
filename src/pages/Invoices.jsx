@@ -588,6 +588,9 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                           units={data.units}
                           value={item.product_id}
                           onSelect={(pid) => updateItem(item.id, "product_id", pid)}
+                          data={data}
+                          update={update}
+                          toast={toast}
                         />
                       </td>
                       <td

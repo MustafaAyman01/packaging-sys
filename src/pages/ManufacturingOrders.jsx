@@ -297,6 +297,9 @@ export function ManufacturingOrders({ data, update, updateStock, toast }) {
                       })
                     }
                     renderExtra={(p) => "المخزون: " + getStockQtyLocal(p.id)}
+                    data={data}
+                    update={update}
+                    toast={toast}
                   />
                 </div>
                 <div className="form-group">
@@ -398,6 +401,9 @@ export function ManufacturingOrders({ data, update, updateStock, toast }) {
                         output_product_id: pid,
                       })
                     }
+                    data={data}
+                    update={update}
+                    toast={toast}
                   />
                 </div>
                 <div className="form-group">

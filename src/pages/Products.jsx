@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generateId, today } from "../utils/format";
 import { fc } from "../utils/format";
+import { CategoryUnitManager } from "../components/CategoryUnitManager";
 
 export function Products({ data, update, updateStock, getStockQty, toast }) {
   const [search, setSearch] = useState("");
@@ -9,9 +10,6 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [manageType, setManageType] = useState(null); // "category" | "unit" | null
-  const [quickAddName, setQuickAddName] = useState("");
-  const [quickAddAbbr, setQuickAddAbbr] = useState("");
-  const [editingItemId, setEditingItemId] = useState(null);
   const [adjForm, setAdjForm] = useState({
     reason: "waste",
     quantity: "",
@@ -138,106 +136,6 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
   };
   const openManage = (type) => {
     setManageType(type);
-    setEditingItemId(null);
-    setQuickAddName("");
-    setQuickAddAbbr("");
-  };
-  const resetManageForm = () => {
-    setEditingItemId(null);
-    setQuickAddName("");
-    setQuickAddAbbr("");
-  };
-  const startEditItem = (item) => {
-    setEditingItemId(item.id);
-    setQuickAddName(item.name);
-    setQuickAddAbbr(item.abbreviation || "");
-  };
-  const saveManageItem = () => {
-    if (!quickAddName.trim()) return;
-    if (manageType === "category") {
-      if (editingItemId) {
-        update(
-          "categories",
-          data.categories.map((c) =>
-            c.id === editingItemId
-              ? {
-                  ...c,
-                  name: quickAddName.trim(),
-                }
-              : c
-          )
-        );
-        toast("تم تعديل الفئة ✓");
-      } else {
-        const newCat = {
-          id: generateId(),
-          name: quickAddName.trim(),
-        };
-        update("categories", [...data.categories, newCat]);
-        setForm({
-          ...form,
-          category_id: newCat.id,
-        });
-        toast("تم إضافة الفئة ✓");
-      }
-    } else if (manageType === "unit") {
-      if (editingItemId) {
-        update(
-          "units",
-          data.units.map((u) =>
-            u.id === editingItemId
-              ? {
-                  ...u,
-                  name: quickAddName.trim(),
-                  abbreviation: quickAddAbbr.trim() || quickAddName.trim(),
-                }
-              : u
-          )
-        );
-        toast("تم تعديل وحدة القياس ✓");
-      } else {
-        const newUnit = {
-          id: generateId(),
-          name: quickAddName.trim(),
-          abbreviation: quickAddAbbr.trim() || quickAddName.trim(),
-        };
-        update("units", [...data.units, newUnit]);
-        setForm({
-          ...form,
-          unit_id: newUnit.id,
-        });
-        toast("تم إضافة وحدة القياس ✓");
-      }
-    }
-    resetManageForm();
-  };
-  const deleteManageItem = (item) => {
-    if (manageType === "category") {
-      const usedCount = data.products.filter((p) => p.category_id === item.id).length;
-      if (usedCount > 0) {
-        toast(`لا يمكن حذف هذه الفئة لأنها مستخدمة في ${usedCount} منتج`);
-        return;
-      }
-      if (!confirm(`حذف الفئة "${item.name}"؟`)) return;
-      update(
-        "categories",
-        data.categories.filter((c) => c.id !== item.id)
-      );
-      toast("تم الحذف");
-    } else if (manageType === "unit") {
-      const usedCount = data.products.filter((p) => p.unit_id === item.id).length;
-      if (usedCount > 0) {
-        toast(`لا يمكن حذف هذه الوحدة لأنها مستخدمة في ${usedCount} منتج`);
-        return;
-      }
-      if (!confirm(`حذف وحدة القياس "${item.name}"؟`)) return;
-      update(
-        "units",
-        data.units.filter((u) => u.id !== item.id)
-      );
-      toast("تم الحذف");
-    }
-    if (editingItemId === item.id) resetManageForm();
   };
   return (
     <div>
@@ -651,190 +549,21 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
           </div>
         </div>
       )}
-      {manageType &&
-        (() => {
-          const manageList = manageType === "category" ? data.categories : data.units;
-          const addInputs = [];
-          addInputs.push(
-            <input
-              key="name"
-              autoFocus={true}
-              placeholder={manageType === "category" ? "اسم الفئة" : "اسم الوحدة"}
-              value={quickAddName}
-              onChange={(e) => setQuickAddName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveManageItem()}
-              style={{
-                flex: 1,
-              }}
-            />
-          );
-          if (manageType === "unit") {
-            addInputs.push(
-              <input
-                key="abbr"
-                placeholder="الاختصار"
-                value={quickAddAbbr}
-                onChange={(e) => setQuickAddAbbr(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveManageItem()}
-                style={{
-                  width: 90,
-                }}
-              />
-            );
+      {manageType && (
+        <CategoryUnitManager
+          type={manageType}
+          data={data}
+          update={update}
+          toast={toast}
+          onClose={() => setManageType(null)}
+          onSelectCreated={(id) =>
+            setForm((f) => ({
+              ...f,
+              [manageType === "category" ? "category_id" : "unit_id"]: id,
+            }))
           }
-          addInputs.push(
-            <button key="save-btn" type="button" className="btn btn-primary btn-sm" onClick={saveManageItem}>
-              {editingItemId ? "تحديث" : "+ إضافة"}
-            </button>
-          );
-          if (editingItemId) {
-            addInputs.push(
-              <button
-                key="cancel-btn"
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={resetManageForm}
-              >
-                إلغاء
-              </button>
-            );
-          }
-          const listRows = manageList.map((item, idx) => {
-            const nameNode =
-              manageType === "unit" && item.abbreviation ? (
-                <span>
-                  {item.name}{" "}
-                  <span
-                    style={{
-                      color: "var(--text3)",
-                      fontSize: 12.5,
-                    }}
-                  >
-                    ({item.abbreviation})
-                  </span>
-                </span>
-              ) : (
-                <span>{item.name}</span>
-              );
-            const editBtn = (
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEditItem(item)}>
-                تعديل
-              </button>
-            );
-            const delBtn = (
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => deleteManageItem(item)}>
-                حذف
-              </button>
-            );
-            const actionsBox = (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                }}
-              >
-                {editBtn}
-                {delBtn}
-              </div>
-            );
-            return (
-              <div
-                key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  borderTop: idx === 0 ? "none" : "1px solid var(--border)",
-                  background: editingItemId === item.id ? "var(--surface2)" : "transparent",
-                }}
-              >
-                {nameNode}
-                {actionsBox}
-              </div>
-            );
-          });
-          const emptyMsg = (
-            <div
-              style={{
-                padding: 16,
-                textAlign: "center",
-                color: "var(--text3)",
-                fontSize: 13,
-              }}
-            >
-              {manageType === "category" ? "لا توجد فئات بعد" : "لا توجد وحدات قياس بعد"}
-            </div>
-          );
-          const headerNode = (
-            <div className="modal-header">
-              <span className="modal-title">
-                {manageType === "category" ? "إدارة الفئات" : "إدارة وحدات القياس"}
-              </span>
-              <button className="close-btn" onClick={() => setManageType(null)}>
-                ×
-              </button>
-            </div>
-          );
-          const addRowNode = React.createElement(
-            "div",
-            {
-              style: {
-                display: "flex",
-                gap: 6,
-                marginBottom: 14,
-              },
-            },
-            ...addInputs
-          );
-          const listBoxNode = (
-            <div
-              style={{
-                maxHeight: 280,
-                overflowY: "auto",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-              }}
-            >
-              {listRows.length ? listRows : emptyMsg}
-            </div>
-          );
-          const bodyNode = (
-            <div className="modal-body">
-              {addRowNode}
-              {listBoxNode}
-            </div>
-          );
-          const footerNode = (
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setManageType(null)}>
-                إنهاء
-              </button>
-            </div>
-          );
-          const modalNode = (
-            <div
-              className="modal"
-              style={{
-                maxWidth: 420,
-              }}
-            >
-              {headerNode}
-              {bodyNode}
-              {footerNode}
-            </div>
-          );
-          return (
-            <div
-              className="modal-overlay"
-              style={{
-                zIndex: 200,
-              }}
-            >
-              {modalNode}
-            </div>
-          );
-        })()}
+        />
+      )}
     </div>
   );
 }
