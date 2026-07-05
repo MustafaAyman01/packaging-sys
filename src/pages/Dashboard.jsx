@@ -27,6 +27,34 @@ export function Dashboard({ data, setPage, getStockQty }) {
   const activeProducts = data.products.filter((p) => p.is_active);
   const lowStock = activeProducts.filter((p) => getStockQty(p.id) < p.min_stock_level);
 
+  // ── فواتير مستحقة قريبًا (خلال 7 أيام) أو متأخرة بالفعل ─────────────────
+  const DUE_SOON_DAYS = 7;
+  const todayStr = today();
+  const dueSoonLimit = new Date();
+  dueSoonLimit.setDate(dueSoonLimit.getDate() + DUE_SOON_DAYS);
+  const dueSoonLimitStr = dueSoonLimit.toISOString().slice(0, 10);
+  const dueInvoices = data.invoices
+    .filter(
+      (i) =>
+        i.status !== "cancelled" &&
+        i.status !== "paid" &&
+        i.total_amount - i.paid_amount > 0.01 &&
+        i.due_date &&
+        i.due_date <= dueSoonLimitStr
+    )
+    .map((i) => ({
+      ...i,
+      remaining: i.total_amount - i.paid_amount,
+      partyName:
+        i.type === "sale"
+          ? data.clients.find((c) => c.id === i.client_id)?.name || "—"
+          : data.suppliers.find((s) => s.id === i.supplier_id)?.name || "—",
+      isOverdue: i.due_date < todayStr,
+    }))
+    .sort((a, b) => a.due_date.localeCompare(b.due_date));
+  const dueReceivables = dueInvoices.filter((i) => i.type === "sale");
+  const duePayables = dueInvoices.filter((i) => i.type === "purchase");
+
   const thisMonth = today().slice(0, 7);
   const mfgOrders = data.manufacturing_orders || [];
   const mfgThisMonth = mfgOrders.filter((o) => (o.order_date || "").startsWith(thisMonth));
@@ -204,6 +232,203 @@ export function Dashboard({ data, setPage, getStockQty }) {
         >
           ⚠️ <strong>{lowStock.length} منتجات وصلت للحد الأدنى:</strong>{" "}
           {lowStock.map((p) => p.name).join("، ")}
+        </div>
+      )}
+
+      {(dueReceivables.length > 0 || duePayables.length > 0) && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+          }}
+        >
+          <div className="card-header">
+            <span className="card-title">
+              🔔 فواتير مستحقة قريبًا (خلال {DUE_SOON_DAYS} أيام) أو متأخرة
+            </span>
+          </div>
+          <div className="card-body">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: 22,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    marginBottom: 10,
+                    fontSize: 13.5,
+                  }}
+                >
+                  💰 مستحق من عملاء ({dueReceivables.length})
+                </div>
+                {dueReceivables.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text3)",
+                    }}
+                  >
+                    لا يوجد
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {dueReceivables.slice(0, 8).map((i) => (
+                      <div
+                        key={i.id}
+                        onClick={() => setPage && setPage("invoices")}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "9px 12px",
+                          borderRadius: "var(--radius-sm)",
+                          background: i.isOverdue ? "var(--red-bg)" : "var(--surface2)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 13.5,
+                            }}
+                          >
+                            {i.partyName}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 11.5,
+                              color: i.isOverdue ? "var(--red)" : "var(--text3)",
+                            }}
+                          >
+                            {i.invoice_number} — {i.isOverdue ? "⚠️ متأخرة، الاستحقاق كان" : "الاستحقاق"}{" "}
+                            {fd(i.due_date)}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                            color: i.isOverdue ? "var(--red)" : "var(--amber)",
+                          }}
+                        >
+                          {fc(i.remaining)}
+                        </div>
+                      </div>
+                    ))}
+                    {dueReceivables.length > 8 && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text3)",
+                          textAlign: "center",
+                        }}
+                      >
+                        +{dueReceivables.length - 8} فاتورة تانية
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    marginBottom: 10,
+                    fontSize: 13.5,
+                  }}
+                >
+                  📤 مستحق لموردين ({duePayables.length})
+                </div>
+                {duePayables.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text3)",
+                    }}
+                  >
+                    لا يوجد
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {duePayables.slice(0, 8).map((i) => (
+                      <div
+                        key={i.id}
+                        onClick={() => setPage && setPage("invoices")}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "9px 12px",
+                          borderRadius: "var(--radius-sm)",
+                          background: i.isOverdue ? "var(--red-bg)" : "var(--surface2)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 13.5,
+                            }}
+                          >
+                            {i.partyName}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 11.5,
+                              color: i.isOverdue ? "var(--red)" : "var(--text3)",
+                            }}
+                          >
+                            {i.invoice_number} — {i.isOverdue ? "⚠️ متأخرة، الاستحقاق كان" : "الاستحقاق"}{" "}
+                            {fd(i.due_date)}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                            color: i.isOverdue ? "var(--red)" : "var(--amber)",
+                          }}
+                        >
+                          {fc(i.remaining)}
+                        </div>
+                      </div>
+                    ))}
+                    {duePayables.length > 8 && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text3)",
+                          textAlign: "center",
+                        }}
+                      >
+                        +{duePayables.length - 8} فاتورة تانية
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
