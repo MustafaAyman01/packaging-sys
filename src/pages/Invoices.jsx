@@ -4,6 +4,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { printInvoice } from "../features/print/printInvoice";
 import { generateId, fc, fd, today } from "../utils/format";
 import { STATUS_LABELS, TYPE_LABELS, PAYMENT_METHODS } from "../constants/labels";
+import { fetchNextInvoiceNumber } from "../services/sync";
 
 export function Invoices({ data, update, updateStock, toast, org }) {
   const [search, setSearch] = useState("");
@@ -66,6 +67,13 @@ export function Invoices({ data, update, updateStock, toast, org }) {
       },
     ]);
     setShowModal(true);
+    // تحديث الرقم بالقيمة الحقيقية من قاعدة البيانات (بيغطي أي بيانات مضافة يدوي/SQL
+    // مش موجودة في الذاكرة المحلية للمتصفح)
+    if (org?.id) {
+      fetchNextInvoiceNumber(org.id, type).then((num) => {
+        setForm((f) => (f.type === type && !f.id ? { ...f, invoice_number: num } : f));
+      });
+    }
   };
   const calcTotals = (items, discount, taxRate) => {
     const subtotal = items.reduce((s, i) => s + (i.total_price || 0), 0);
@@ -95,7 +103,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         return updated;
       })
     );
-  const saveInvoice = () => {
+  const saveInvoice = async () => {
     if (!items.some((i) => i.product_id)) return;
     // Guard against duplicate invoice numbers (unique per type per org in the DB)
     const dupNumber = data.invoices.some(
@@ -129,37 +137,59 @@ export function Invoices({ data, update, updateStock, toast, org }) {
       }
     }
     const totals = calcTotals(items, form.discount_amount, form.tax_rate);
-    const inv = {
-      ...form,
-      ...totals,
-      id: generateId(),
-      paid_amount: form.status === "paid" ? totals.total_amount : 0,
-      items: items
-        .filter((i) => i.product_id)
-        .map((i) => {
-          const prod = data.products.find((p) => p.id === i.product_id);
-          return {
-            ...i,
-            product_name: prod?.name || "",
-            product_sku: prod?.sku || "",
-          };
-        }),
-      created_at: today(),
-    };
-    update("invoices", [...data.invoices, inv]);
-    items
+    const invoiceItems = items
       .filter((i) => i.product_id)
-      .forEach((item) => {
-        updateStock(item.product_id, form.type === "sale" ? -item.quantity : item.quantity);
+      .map((i) => {
+        const prod = data.products.find((p) => p.id === i.product_id);
+        return {
+          ...i,
+          product_name: prod?.name || "",
+          product_sku: prod?.sku || "",
+        };
       });
-    setShowModal(false);
-    toast("تم حفظ الفاتورة ✓");
+    let invoiceNumber = form.invoice_number;
+    let errors = [];
+    let attempt = 0;
+    const previousInvoices = data.invoices;
+    while (attempt < 3) {
+      const inv = {
+        ...form,
+        ...totals,
+        invoice_number: invoiceNumber,
+        id: generateId(),
+        paid_amount: form.status === "paid" ? totals.total_amount : 0,
+        items: invoiceItems,
+        created_at: today(),
+      };
+      errors = await update("invoices", [...previousInvoices, inv]);
+      if (!errors || !errors.length) {
+        invoiceItems.forEach((item) => {
+          updateStock(item.product_id, form.type === "sale" ? -item.quantity : item.quantity);
+        });
+        setShowModal(false);
+        toast("تم حفظ الفاتورة ✓");
+        return;
+      }
+      // فشل الحفظ فعليًا — نرجّع القائمة زي ما كانت ومنلمسش المخزون
+      update("invoices", previousInvoices);
+      const isDupNumber = /invoice_number|duplicate key/i.test(errors[0].message || "");
+      if (isDupNumber && org?.id) {
+        // رقم الفاتورة اتعارض مع حاجة موجودة فعليًا في قاعدة البيانات (زي بيانات
+        // اتضافت من SQL مباشرة) — نجيب رقم حقيقي من السيرفر ونجرب تاني تلقائي
+        invoiceNumber = await fetchNextInvoiceNumber(org.id, form.type);
+        attempt++;
+        continue;
+      }
+      break;
+    }
+    toast(`⚠️ فشل حفظ الفاتورة ولم يتم تعديل المخزون: ${errors[0]?.message || "خطأ غير معروف"}`);
+    setForm((f) => ({ ...f, invoice_number: invoiceNumber }));
   };
 
   // Change invoice status
-  const changeStatus = (inv, newStatus) => {
+  const changeStatus = async (inv, newStatus) => {
     if (newStatus === "cancelled" && !confirm("هتلغي الفاتورة؟ ده هيرجع المخزون.")) return;
-    update(
+    const errors = await update(
       "invoices",
       data.invoices.map((i) => {
         if (i.id !== inv.id) return i;
@@ -169,6 +199,10 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         };
       })
     );
+    if (errors && errors.length) {
+      toast(`⚠️ فشل تغيير الحالة، لم يتم تعديل المخزون: ${errors[0].message}`);
+      return;
+    }
     if (newStatus === "cancelled") {
       (inv.items || []).forEach((item) => {
         updateStock(item.product_id, inv.type === "sale" ? item.quantity : -item.quantity);

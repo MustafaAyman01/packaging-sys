@@ -133,26 +133,36 @@ export function App({ features, session, profile, trialEndsAt }) {
   };
   const update = useCallback(
     (key, items) => {
+      let oldItemsCaptured = [];
       setData((d) => {
-        const oldItems = d[key] || [];
-        if (SUPABASE_ENABLED && profile && cloudReady) {
-          syncTableChange(profile.org_id, key, oldItems, items, profile.id)
-            .then((errors) => {
-              if (errors && errors.length) {
-                const first = errors[0];
-                setToastMsg(`⚠️ خطأ مزامنة (${first.table}/${first.op}): ${first.message}`);
-              }
-            })
-            .catch((e) => {
-              console.error("sync error", key, e);
-              setToastMsg("⚠️ خطأ في مزامنة البيانات مع السحابة: " + (e.message || e));
-            });
-        }
+        oldItemsCaptured = d[key] || [];
         return {
           ...d,
           [key]: items,
         };
       });
+      if (SUPABASE_ENABLED && profile && cloudReady) {
+        return syncTableChange(profile.org_id, key, oldItemsCaptured, items, profile.id)
+          .then((errors) => {
+            if (errors && errors.length) {
+              const first = errors[0];
+              setToastMsg(`⚠️ خطأ مزامنة (${first.table}/${first.op}): ${first.message}`);
+            }
+            return errors || [];
+          })
+          .catch((e) => {
+            console.error("sync error", key, e);
+            setToastMsg("⚠️ خطأ في مزامنة البيانات مع السحابة: " + (e.message || e));
+            return [
+              {
+                table: key,
+                op: "sync",
+                message: e.message || String(e),
+              },
+            ];
+          });
+      }
+      return Promise.resolve([]);
     },
     [profile, cloudReady]
   );

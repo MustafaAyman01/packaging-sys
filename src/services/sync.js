@@ -1,6 +1,31 @@
 import { sb } from "./supabaseClient";
 import { generateId } from "../utils/format";
 
+// يجيب أعلى رقم فاتورة مستخدم فعليًا من قاعدة البيانات مباشرة (مش من الذاكرة المحلية)
+// عشان يتفادى تعارض الأرقام لو حد ضاف بيانات تجريبية من SQL أو من جهاز تاني
+export async function fetchNextInvoiceNumber(orgId, type) {
+  const prefix = type === "sale" ? "INV" : "PUR";
+  const year = new Date().getFullYear();
+  const yearPrefix = `${prefix}-${year}-`;
+  try {
+    const { data, error } = await sb
+      .from("invoices")
+      .select("invoice_number")
+      .eq("org_id", orgId)
+      .eq("type", type)
+      .like("invoice_number", `${yearPrefix}%`);
+    if (error || !data) return `${yearPrefix}001`;
+    let max = 0;
+    data.forEach((row) => {
+      const n = parseInt((row.invoice_number || "").slice(yearPrefix.length), 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    return `${yearPrefix}${String(max + 1).padStart(3, "0")}`;
+  } catch {
+    return `${yearPrefix}001`;
+  }
+}
+
 export const SYNC_TABLES = {
   categories: {
     table: "categories",
