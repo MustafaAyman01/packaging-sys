@@ -31,7 +31,10 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         (!typeFilter || i.type === typeFilter) &&
         (!statusFilter || i.status === statusFilter)
     )
-    .sort((a, b) => b.invoice_date.localeCompare(a.invoice_date));
+    .sort(
+      (a, b) =>
+        b.invoice_date.localeCompare(a.invoice_date) || (b.created_at || "").localeCompare(a.created_at || "")
+    );
   const newInvNum = (type) => {
     const prefix = type === "sale" ? "INV" : "PUR";
     const year = new Date().getFullYear();
@@ -168,7 +171,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
           id: generateId(),
           paid_amount: form.status === "paid" ? totals.total_amount : 0,
           items: invoiceItems,
-          created_at: today(),
+          created_at: new Date().toISOString(),
         };
         errors = await update("invoices", [...previousInvoices, inv]);
         if (!errors || !errors.length) {
