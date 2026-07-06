@@ -198,12 +198,31 @@ function pickFields(obj, fields) {
   });
   return out;
 }
+// يجيب كل صفوف الجدول من غير ما يقف عند الحد الافتراضي (1000 صف) اللي بترجعه
+// Supabase/PostgREST تلقائيًا لأي سؤال عادي - بيقسم الطلب لدفعات (1000 كل مرة)
+// لحد ما يجيب كل البيانات فعليًا
+async function fetchAllRows(table, orgId) {
+  const pageSize = 1000;
+  let from = 0;
+  let all = [];
+  while (true) {
+    const { data: rows, error } = await sb
+      .from(table)
+      .select("*")
+      .eq("org_id", orgId)
+      .range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    all = all.concat(rows || []);
+    if (!rows || rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: all, error: null };
+}
+
 export async function fetchCloudData(orgId) {
   const result = {};
   const keys = Object.keys(SYNC_TABLES);
-  const responses = await Promise.all(
-    keys.map((key) => sb.from(SYNC_TABLES[key].table).select("*").eq("org_id", orgId))
-  );
+  const responses = await Promise.all(keys.map((key) => fetchAllRows(SYNC_TABLES[key].table, orgId)));
   keys.forEach((key, i) => {
     const { data: rows, error } = responses[i];
     if (error) {
@@ -217,10 +236,23 @@ export async function fetchCloudData(orgId) {
     // ملحوظة: تعمّدنا عدم استخدام .in("invoice_id", invIds) هنا لأنه مع وجود
     // آلاف الفواتير، الرابط بيبقى طويل جدًا ويفشل بصمت (من غير أي رسالة خطأ).
     // بدل كده، بنعتمد على RLS policy بتاعة invoice_items نفسها (اللي أصلاً
-    // بتقصر النتيجة على فواتير نفس المنظمة فقط) من غير أي فلتر إضافي هنا.
-    const { data: items, error: itemsError } = await sb.from("invoice_items").select("*");
-    if (itemsError) {
-      console.error("fetchCloudData error on invoice_items", itemsError);
+    // بتقصر النتيجة على فواتير نفس المنظمة فقط) من غير أي فلتر إضافي هنا،
+    // مع pagination عشان منقفش عند حد الـ 1000 صف الافتراضي هنا كمان
+    let items = [];
+    let itemsFrom = 0;
+    const itemsPageSize = 1000;
+    while (true) {
+      const { data: pageRows, error: itemsError } = await sb
+        .from("invoice_items")
+        .select("*")
+        .range(itemsFrom, itemsFrom + itemsPageSize - 1);
+      if (itemsError) {
+        console.error("fetchCloudData error on invoice_items", itemsError);
+        break;
+      }
+      items = items.concat(pageRows || []);
+      if (!pageRows || pageRows.length < itemsPageSize) break;
+      itemsFrom += itemsPageSize;
     }
     const itemsByInvoice = new Map();
     (items || []).forEach((it) => {
