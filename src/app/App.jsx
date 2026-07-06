@@ -840,7 +840,11 @@ export function App({ features, session, profile, trialEndsAt }) {
               )}
               {trialEndsAt &&
                 (() => {
-                  const daysLeft = Math.ceil((new Date(trialEndsAt) - new Date()) / 86400000);
+                  const trialDate = new Date(trialEndsAt);
+                  const trialMidnight = new Date(trialDate.getFullYear(), trialDate.getMonth(), trialDate.getDate());
+                  const now = new Date();
+                  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const daysLeft = Math.round((trialMidnight - nowMidnight) / 86400000);
                   if (daysLeft > 7) return null;
                   return (
                     <span
