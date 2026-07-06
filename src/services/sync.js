@@ -214,20 +214,29 @@ export async function fetchCloudData(orgId) {
     result[key] = rows || [];
   });
   if (result.invoices && result.invoices.length) {
-    const invIds = result.invoices.map((i) => i.id);
-    const { data: items } = await sb.from("invoice_items").select("*").in("invoice_id", invIds);
+    // ملحوظة: تعمّدنا عدم استخدام .in("invoice_id", invIds) هنا لأنه مع وجود
+    // آلاف الفواتير، الرابط بيبقى طويل جدًا ويفشل بصمت (من غير أي رسالة خطأ).
+    // بدل كده، بنعتمد على RLS policy بتاعة invoice_items نفسها (اللي أصلاً
+    // بتقصر النتيجة على فواتير نفس المنظمة فقط) من غير أي فلتر إضافي هنا.
+    const { data: items, error: itemsError } = await sb.from("invoice_items").select("*");
+    if (itemsError) {
+      console.error("fetchCloudData error on invoice_items", itemsError);
+    }
+    const itemsByInvoice = new Map();
+    (items || []).forEach((it) => {
+      if (!itemsByInvoice.has(it.invoice_id)) itemsByInvoice.set(it.invoice_id, []);
+      itemsByInvoice.get(it.invoice_id).push({
+        id: it.id,
+        product_id: it.product_id,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        discount_percent: it.discount_percent,
+        total_price: it.total_price,
+      });
+    });
     result.invoices = result.invoices.map((inv) => ({
       ...inv,
-      items: (items || [])
-        .filter((it) => it.invoice_id === inv.id)
-        .map((it) => ({
-          id: it.id,
-          product_id: it.product_id,
-          quantity: it.quantity,
-          unit_price: it.unit_price,
-          discount_percent: it.discount_percent,
-          total_price: it.total_price,
-        })),
+      items: itemsByInvoice.get(inv.id) || [],
     }));
   }
   return result;
