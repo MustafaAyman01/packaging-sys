@@ -211,16 +211,25 @@ export function Dashboard({ data, setPage, getStockQty }) {
         className="card"
         style={{
           marginBottom: 20,
+          overflow: "visible",
         }}
       >
         <div className="card-header">
           <span className="card-title">🔍 استعلام سريع عن سعر ورصيد منتج</span>
         </div>
-        <div className="card-body">
+        <div
+          className="card-body"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 20,
+          }}
+        >
           <div
             style={{
-              maxWidth: 420,
-              marginBottom: lookupProduct ? 16 : 0,
+              width: 260,
+              flexShrink: 0,
             }}
           >
             <ProductPicker
@@ -231,108 +240,56 @@ export function Dashboard({ data, setPage, getStockQty }) {
               placeholder="اكتب اسم المنتج أو الكود..."
             />
           </div>
-          {lookupProduct && (
+          {lookupProduct ? (
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-                gap: 12,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "6px 26px",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    color: "var(--text3)",
-                    marginBottom: 3,
-                  }}
-                >
-                  الفئة
+              {[
+                ["الفئة", lookupCategory?.name || "—"],
+                ["سعر التكلفة", fc(lookupProduct.cost_price)],
+                ["سعر البيع", fc(lookupProduct.sale_price), "var(--accent)"],
+                [
+                  "الرصيد الحالي",
+                  `${lookupQty.toLocaleString()} ${lookupUnit?.abbreviation || ""}${lookupLow ? " ⚠️" : ""}`,
+                  lookupLow ? "var(--red)" : "var(--green)",
+                ],
+                ["الحد الأدنى", `${(lookupProduct.min_stock_level || 0).toLocaleString()} ${lookupUnit?.abbreviation || ""}`],
+              ].map(([label, value, color], i) => (
+                <div key={i}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text3)",
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: color || "var(--text)",
+                    }}
+                  >
+                    {value}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                  }}
-                >
-                  {lookupCategory?.name || "—"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    color: "var(--text3)",
-                    marginBottom: 3,
-                  }}
-                >
-                  سعر التكلفة
-                </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                  }}
-                >
-                  {fc(lookupProduct.cost_price)}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    color: "var(--text3)",
-                    marginBottom: 3,
-                  }}
-                >
-                  سعر البيع
-                </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--accent)",
-                  }}
-                >
-                  {fc(lookupProduct.sale_price)}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    color: "var(--text3)",
-                    marginBottom: 3,
-                  }}
-                >
-                  الرصيد الحالي
-                </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    color: lookupLow ? "var(--red)" : "var(--green)",
-                  }}
-                >
-                  {lookupQty.toLocaleString()} {lookupUnit?.abbreviation}
-                  {lookupLow ? " ⚠️" : ""}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    color: "var(--text3)",
-                    marginBottom: 3,
-                  }}
-                >
-                  الحد الأدنى
-                </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                  }}
-                >
-                  {lookupProduct.min_stock_level?.toLocaleString() || 0} {lookupUnit?.abbreviation}
-                </div>
-              </div>
+              ))}
             </div>
+          ) : (
+            <span
+              style={{
+                fontSize: 13,
+                color: "var(--text3)",
+              }}
+            >
+              اختر منتج لعرض سعره ورصيده الحالي
+            </span>
           )}
         </div>
       </div>
