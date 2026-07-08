@@ -194,12 +194,21 @@ export function Invoices({ data, update, updateStock, toast, org }) {
             product_sku: prod?.sku || "",
           };
         });
+      // تحديد المبلغ المدفوع حسب حالة الفاتورة: مدفوعة بالكامل = إجمالي الفاتورة،
+      // جزئي = المبلغ اللي المستخدم دخّله (بحد أقصى إجمالي الفاتورة)، غير كده = صفر
+      const resolvedPaidAmount =
+        form.status === "paid"
+          ? totals.total_amount
+          : form.status === "partial"
+          ? Math.min(Math.max(+form.paid_amount || 0, 0), totals.total_amount)
+          : 0;
 
       if (isEdit) {
         const previousInvoices = data.invoices;
         const inv = {
           ...form,
           ...totals,
+          paid_amount: resolvedPaidAmount,
           items: invoiceItems,
           updated_at: new Date().toISOString(),
         };
@@ -244,7 +253,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
           ...totals,
           invoice_number: invoiceNumber,
           id: generateId(),
-          paid_amount: form.status === "paid" ? totals.total_amount : 0,
+          paid_amount: resolvedPaidAmount,
           items: invoiceItems,
           created_at: new Date().toISOString(),
         };
@@ -864,6 +873,24 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                     ))}
                   </select>
                 </div>
+                {form.status === "partial" && (
+                  <div className="form-group">
+                    <label>المبلغ المدفوع</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.paid_amount ?? ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          paid_amount: e.target.value,
+                        })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
                 <div className="form-group">
                   <label>ملاحظات</label>
                   <textarea
