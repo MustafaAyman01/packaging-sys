@@ -435,23 +435,32 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
       const oldItemsArr = old?.items || [];
       const newItemsArr = item.items || [];
       if (JSON.stringify(oldItemsArr) === JSON.stringify(newItemsArr)) continue;
-      await sb.from("invoice_items").delete().eq("invoice_id", id);
-      if (newItemsArr.length) {
-        const rows = newItemsArr.map((it) => ({
-          id: it.id && it.id.length === 36 ? it.id : generateId(),
-          invoice_id: id,
-          product_id: it.product_id,
-          quantity: it.quantity,
-          unit_price: it.unit_price,
-          discount_percent: it.discount_percent || 0,
-          total_price: it.total_price,
-        }));
-        const { error } = await sb.from("invoice_items").insert(rows);
+      const rows = newItemsArr.map((it) => ({
+        id: it.id && it.id.length === 36 ? it.id : generateId(),
+        invoice_id: id,
+        product_id: it.product_id,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        discount_percent: it.discount_percent || 0,
+        total_price: it.total_price,
+      }));
+      const newIds = new Set(rows.map((r) => r.id));
+      // نحذف بس البنود القديمة اللي فعلاً اتشالت من الفاتورة (مش موجودة في القائمة
+      // الجديدة)، وسايبين الباقي عشان الـ upsert التالي يحدّثه بدل حذفه وإعادة إضافته
+      const idsToDelete = oldItemsArr.map((it) => it.id).filter((oid) => oid && !newIds.has(oid));
+      if (idsToDelete.length) {
+        const { error: delErr } = await sb.from("invoice_items").delete().in("id", idsToDelete);
+        if (delErr) console.error("syncTableChange invoice_items delete error", delErr);
+      }
+      if (rows.length) {
+        // upsert بدل insert: لو الـ id موجود بالفعل (تعديل فاتورة) يتحدّث بدل ما يدّي
+        // duplicate key error زي ما كان بيحصل مع delete+insert المنفصلين
+        const { error } = await sb.from("invoice_items").upsert(rows);
         if (error) {
           console.error("syncTableChange invoice_items error", error);
           errors.push({
             table: "invoice_items",
-            op: "insert",
+            op: "upsert",
             message: error.message,
           });
         }
