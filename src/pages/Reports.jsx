@@ -171,6 +171,30 @@ export function Reports({ data, getStockQty, org }) {
     }))
     .filter((s) => s.balance > 0.01)
     .sort((a, b) => b.balance - a.balance);
+  // كشف أرصدة دائنة: عملاء دفعوا زيادة عن المستحق عليهم (رصيد ليهم عندنا)،
+  // وموردين دفعنالهم زيادة عن المستحق عليهم (رصيد لينا عندهم)
+  const clientCreditsList = data.clients
+    .map((c) => ({
+      ...c,
+      balance:
+        allTimeSales
+          .filter((i) => i.client_id === c.id)
+          .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) - (unappliedByClient[c.id] || 0),
+    }))
+    .filter((c) => c.balance < -0.01)
+    .map((c) => ({ ...c, balance: -c.balance }))
+    .sort((a, b) => b.balance - a.balance);
+  const supplierCreditsList = data.suppliers
+    .map((s) => ({
+      ...s,
+      balance:
+        allTimePurch
+          .filter((i) => i.supplier_id === s.id)
+          .reduce((sum, i) => sum + (i.total_amount - i.paid_amount), 0) - (unappliedBySupplier[s.id] || 0),
+    }))
+    .filter((s) => s.balance < -0.01)
+    .map((s) => ({ ...s, balance: -s.balance }))
+    .sort((a, b) => b.balance - a.balance);
 
   // Period-bound totals (used by "financial" tab cards — these intentionally follow the selected period)
   const periodSales = salesCur;
@@ -658,7 +682,9 @@ export function Reports({ data, getStockQty, org }) {
           >
             <button
               className="btn btn-secondary"
-              onClick={() => printDebtsSheet(clientDebtsList, supplierDebtsList, org)}
+              onClick={() =>
+                printDebtsSheet(clientDebtsList, supplierDebtsList, clientCreditsList, supplierCreditsList, org)
+              }
             >
               🖨️ طباعة كشف المديونيات
             </button>

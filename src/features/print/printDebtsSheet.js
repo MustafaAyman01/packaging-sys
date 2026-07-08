@@ -1,6 +1,6 @@
 import { fc, fd, today } from "../../utils/format";
 
-export function printDebtsSheet(clientDebts, supplierDebts, org) {
+export function printDebtsSheet(clientDebts, supplierDebts, clientCredits, supplierCredits, org) {
   const clientRows = clientDebts
     .map(
       (c, i) => `<tr>
@@ -21,8 +21,30 @@ export function printDebtsSheet(clientDebts, supplierDebts, org) {
     </tr>`
     )
     .join("");
+  const clientCreditRows = (clientCredits || [])
+    .map(
+      (c, i) => `<tr>
+      <td style="text-align:center;color:#6b6456">${i + 1}</td>
+      <td><strong>${c.name}</strong></td>
+      <td style="text-align:center">${c.phone || "—"}</td>
+      <td style="text-align:center;font-weight:700;color:#16a34a">${fc(c.balance)}</td>
+    </tr>`
+    )
+    .join("");
+  const supplierCreditRows = (supplierCredits || [])
+    .map(
+      (s, i) => `<tr>
+      <td style="text-align:center;color:#6b6456">${i + 1}</td>
+      <td><strong>${s.name}</strong></td>
+      <td style="text-align:center">${s.phone || "—"}</td>
+      <td style="text-align:center;font-weight:700;color:#16a34a">${fc(s.balance)}</td>
+    </tr>`
+    )
+    .join("");
   const totalClientDebts = clientDebts.reduce((s, c) => s + c.balance, 0);
   const totalSupplierDebts = supplierDebts.reduce((s, sp) => s + sp.balance, 0);
+  const totalClientCredits = (clientCredits || []).reduce((s, c) => s + c.balance, 0);
+  const totalSupplierCredits = (supplierCredits || []).reduce((s, sp) => s + sp.balance, 0);
   const w = window.open("", "_blank");
   w.document.write(`<!DOCTYPE html>
 <html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مديونيات</title>
@@ -51,6 +73,14 @@ td{padding:7px 8px;border-bottom:1px solid #e5e1d8}
 <table><thead><tr><th>#</th><th>المورد</th><th>الهاتف</th><th>المبلغ المستحق</th></tr></thead>
 <tbody>${supplierRows || `<tr><td colspan="4" style="text-align:center;color:#9c9080">لا توجد مديونيات</td></tr>`}</tbody></table>
 <div class="final">إجمالي مستحق للموردين: ${fc(totalSupplierDebts)}</div>
+<h2>أرصدة لصالح العملاء (دفعوا زيادة عن المستحق عليهم)</h2>
+<table><thead><tr><th>#</th><th>العميل</th><th>الهاتف</th><th>الرصيد له</th></tr></thead>
+<tbody>${clientCreditRows || `<tr><td colspan="4" style="text-align:center;color:#9c9080">لا توجد أرصدة</td></tr>`}</tbody></table>
+<div class="final">إجمالي أرصدة العملاء: ${fc(totalClientCredits)}</div>
+<h2>أرصدة لصالحنا عند الموردين (دفعنا زيادة عن المستحق عليهم)</h2>
+<table><thead><tr><th>#</th><th>المورد</th><th>الهاتف</th><th>الرصيد لنا</th></tr></thead>
+<tbody>${supplierCreditRows || `<tr><td colspan="4" style="text-align:center;color:#9c9080">لا توجد أرصدة</td></tr>`}</tbody></table>
+<div class="final">إجمالي أرصدة عندنا لدى الموردين: ${fc(totalSupplierCredits)}</div>
 <script>window.onload=()=>{ setTimeout(()=>window.print(),400); }<\/script>
 </body></html>`);
   w.document.close();
