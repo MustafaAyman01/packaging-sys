@@ -63,10 +63,16 @@ export function Suppliers({ data, update, toast, org }) {
       toast("تم الحذف");
     }
   };
-  const getBalance = (id) =>
-    data.invoices
+  const getBalance = (id) => {
+    const invBalance = data.invoices
       .filter((i) => i.supplier_id === id && i.type === "purchase" && i.status !== "cancelled")
       .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0);
+    // دفعات "على الحساب" غير مربوطة بفاتورة معينة (مقدم/فرق مستحق للمورد) بتقلل من رصيده
+    const unapplied = data.payments
+      .filter((p) => !p.invoice_id && p.party_type === "supplier" && p.party_id === id)
+      .reduce((s, p) => s + p.amount, 0);
+    return invBalance - unapplied;
+  };
   return (
     <div>
       <div

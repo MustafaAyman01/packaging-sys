@@ -65,10 +65,16 @@ export function Clients({ data, update, toast, org }) {
       toast("تم الحذف");
     }
   };
-  const getBalance = (id) =>
-    data.invoices
+  const getBalance = (id) => {
+    const invBalance = data.invoices
       .filter((i) => i.client_id === id && i.type === "sale" && i.status !== "cancelled")
       .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0);
+    // دفعات "على الحساب" غير مربوطة بفاتورة معينة (مقدم/فرق مستحق للعميل) بتقلل من رصيده
+    const unapplied = data.payments
+      .filter((p) => !p.invoice_id && p.party_type === "client" && p.party_id === id)
+      .reduce((s, p) => s + p.amount, 0);
+    return invBalance - unapplied;
+  };
   return (
     <div>
       <div

@@ -15,6 +15,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
   const [viewInv, setViewInv] = useState(null);
   const [form, setForm] = useState({});
   const [items, setItems] = useState([]);
+  const [originalItems, setOriginalItems] = useState([]);
   const [quickPay, setQuickPay] = useState({
     amount: "",
     method: "cash",
@@ -70,6 +71,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         total_price: 0,
       },
     ]);
+    setOriginalItems([]);
     setShowModal(true);
     // تحديث الرقم بالقيمة الحقيقية من قاعدة البيانات (بيغطي أي بيانات مضافة يدوي/SQL
     // مش موجودة في الذاكرة المحلية للمتصفح)
@@ -78,6 +80,33 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         setForm((f) => (f.type === type && !f.id ? { ...f, invoice_number: num } : f));
       });
     }
+  };
+  const openEdit = (inv) => {
+    if (inv.status === "cancelled") {
+      toast("⚠️ لا يمكن تعديل فاتورة ملغاة");
+      return;
+    }
+    setForm({
+      id: inv.id,
+      type: inv.type,
+      invoice_number: inv.invoice_number,
+      invoice_date: inv.invoice_date,
+      due_date: inv.due_date,
+      client_id: inv.client_id || "",
+      supplier_id: inv.supplier_id || "",
+      discount_amount: inv.discount_amount || 0,
+      tax_rate: inv.tax_rate ?? 14,
+      status: inv.status,
+      notes: inv.notes || "",
+      paid_amount: inv.paid_amount || 0,
+      created_at: inv.created_at,
+    });
+    const invItems = (inv.items || []).map((i) => ({ ...i }));
+    setItems(invItems.length ? invItems : [
+      { id: generateId(), product_id: "", quantity: 1, unit_price: 0, discount_percent: 0, total_price: 0 },
+    ]);
+    setOriginalItems((inv.items || []).map((i) => ({ ...i })));
+    setShowModal(true);
   };
   const calcTotals = (items, discount, taxRate) => {
     const subtotal = items.reduce((s, i) => s + (i.total_price || 0), 0);
@@ -110,26 +139,37 @@ export function Invoices({ data, update, updateStock, toast, org }) {
   const saveInvoice = async () => {
     if (saving) return; // منع الضغط المتكرر على "حفظ" أثناء تنفيذ عملية سابقة
     if (!items.some((i) => i.product_id)) return;
+    const isEdit = !!form.id;
     // Guard against duplicate invoice numbers (unique per type per org in the DB)
     const dupNumber = data.invoices.some(
       (i) => i.invoice_number === form.invoice_number && i.type === form.type && i.id !== form.id
     );
     if (dupNumber) {
       toast("⚠️ رقم الفاتورة ده مستخدم قبل كده، تم توليد رقم جديد");
-      setForm((f) => ({
-        ...f,
-        invoice_number: newInvNum(form.type),
-      }));
+      if (!isEdit) {
+        setForm((f) => ({
+          ...f,
+          invoice_number: newInvNum(form.type),
+        }));
+      }
       return;
+    }
+    // حساب فرق الكميات بالنسبة لفاتورة بتتعدل، بحيث الكمية الأصلية للفاتورة نفسها
+    // متتحسبش كـ"محجوزة" على المخزون الحالي
+    const oldQtyMap = {};
+    if (isEdit) {
+      originalItems.forEach((i) => {
+        oldQtyMap[i.product_id] = (oldQtyMap[i.product_id] || 0) + (i.quantity || 0);
+      });
     }
     // Check stock for sale invoices
     if (form.type === "sale") {
       const shortItems = items
         .filter((i) => i.product_id)
         .filter((item) => {
-          const prod = data.products.find((p) => p.id === item.product_id);
-          const qty = data.stock_levels.find((s) => s.product_id === item.product_id)?.quantity || 0;
-          return qty < item.quantity;
+          const stockQty = data.stock_levels.find((s) => s.product_id === item.product_id)?.quantity || 0;
+          const available = stockQty + (oldQtyMap[item.product_id] || 0);
+          return available < item.quantity;
         });
       if (shortItems.length > 0) {
         const names = shortItems
@@ -154,6 +194,41 @@ export function Invoices({ data, update, updateStock, toast, org }) {
             product_sku: prod?.sku || "",
           };
         });
+
+      if (isEdit) {
+        const previousInvoices = data.invoices;
+        const inv = {
+          ...form,
+          ...totals,
+          items: invoiceItems,
+          updated_at: new Date().toISOString(),
+        };
+        const errors = await update(
+          "invoices",
+          previousInvoices.map((i) => (i.id === form.id ? inv : i))
+        );
+        if (!errors || !errors.length) {
+          // تعديل المخزون بالفرق فقط بين الكميات القديمة والجديدة لكل منتج
+          const newQtyMap = {};
+          invoiceItems.forEach((i) => {
+            newQtyMap[i.product_id] = (newQtyMap[i.product_id] || 0) + (i.quantity || 0);
+          });
+          const allProductIds = new Set([...Object.keys(oldQtyMap), ...Object.keys(newQtyMap)]);
+          allProductIds.forEach((pid) => {
+            const delta = (newQtyMap[pid] || 0) - (oldQtyMap[pid] || 0);
+            if (delta !== 0) {
+              updateStock(pid, form.type === "sale" ? -delta : delta);
+            }
+          });
+          setShowModal(false);
+          toast("تم تحديث الفاتورة ✓");
+          return;
+        }
+        await update("invoices", previousInvoices);
+        toast(`⚠️ فشل تحديث الفاتورة ولم يتم تعديل المخزون: ${errors[0]?.message || "خطأ غير معروف"}`);
+        return;
+      }
+
       let invoiceNumber = form.invoice_number;
       let errors = [];
       let attempt = 0;
@@ -451,6 +526,12 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                       >
                         🖨️
                       </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => openEdit(inv)}
+                      >
+                        ✏️ تعديل
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -470,7 +551,11 @@ export function Invoices({ data, update, updateStock, toast, org }) {
           <div className="modal modal-lg">
             <div className="modal-header">
               <span className="modal-title">
-                {form.type === "sale" ? "🛒 فاتورة مبيعات جديدة" : "📦 فاتورة مشتريات جديدة"}
+                {form.id
+                  ? `✏️ تعديل فاتورة ${form.type === "sale" ? "مبيعات" : "مشتريات"}`
+                  : form.type === "sale"
+                  ? "🛒 فاتورة مبيعات جديدة"
+                  : "📦 فاتورة مشتريات جديدة"}
               </span>
               <button className="close-btn" onClick={() => setShowModal(false)}>
                 ×
@@ -801,7 +886,7 @@ export function Invoices({ data, update, updateStock, toast, org }) {
                 إلغاء
               </button>
               <button className="btn btn-primary" disabled={saving} onClick={saveInvoice}>
-                💾 {saving ? "جاري الحفظ..." : "حفظ الفاتورة"}
+                💾 {saving ? "جاري الحفظ..." : form.id ? "تحديث الفاتورة" : "حفظ الفاتورة"}
               </button>
             </div>
           </div>
@@ -821,6 +906,15 @@ export function Invoices({ data, update, updateStock, toast, org }) {
               >
                 <button className="btn btn-secondary btn-sm" onClick={() => printInvoice(viewInv, data, org)}>
                   🖨️ طباعة
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    openEdit(viewInv);
+                    setViewInv(null);
+                  }}
+                >
+                  ✏️ تعديل
                 </button>
                 <button className="close-btn" onClick={() => setViewInv(null)}>
                   ×
