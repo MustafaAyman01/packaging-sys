@@ -41,7 +41,11 @@ export function buildStatementEntries(party, partyType, data) {
   entries.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.type === "invoice" ? -1 : 1));
   let running = 0;
   entries.forEach((e) => {
-    running += e.debit - e.credit;
+    // للعميل: الفاتورة (مدين) بتزوّد المستحق منه، والدفعة (دائن) بتقلله.
+    // للمورد: الفاتورة (دائن) بتزوّد اللي علينا ليه، والدفعة (مدين) بتقلله —
+    // يعني الاتجاه هنا عكس العميل، فلازم نعكس المعادلة عشان "الرصيد" يفضل معناه
+    // ثابت: موجب = مستحق منه/عليه، سالب = هو اللي له رصيد عندنا (دفع بزيادة).
+    running += invType === "sale" ? e.debit - e.credit : e.credit - e.debit;
     e.balance = running;
   });
   return entries;
@@ -81,7 +85,17 @@ td{padding:8px 10px;border-bottom:1px solid #e5e1d8}
 <div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — تاريخ الطباعة: ${fd(today())}</div>
 <table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead>
 <tbody>${rows}</tbody></table>
-<div class="final">الرصيد النهائي: ${fc(finalBalance)} ${finalBalance > 0.01 ? (partyType === "client" ? "(مستحق من العميل)" : "(مستحق له)") : ""}</div>
+<div class="final">الرصيد النهائي: ${fc(Math.abs(finalBalance))} ${
+    finalBalance > 0.01
+      ? partyType === "client"
+        ? "(مستحق من العميل)"
+        : "(مستحق له)"
+      : finalBalance < -0.01
+      ? partyType === "client"
+        ? "(له رصيد لدينا)"
+        : "(لنا رصيد عنده)"
+      : ""
+  }</div>
 <script>window.onload=()=>{ setTimeout(()=>window.print(),400); }<\/script>
 </body></html>`);
   w.document.close();

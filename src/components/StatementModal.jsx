@@ -76,11 +76,19 @@ export function StatementModal({ party, partyType, data, org, onClose }) {
                   <span>الرصيد النهائي</span>
                   <span
                     style={{
-                      color: finalBalance > 0.01 ? "var(--red)" : "var(--green)",
+                      color: finalBalance > 0.01 ? "var(--red)" : finalBalance < -0.01 ? "var(--green)" : "var(--text)",
                     }}
                   >
-                    {fc(finalBalance)}{" "}
-                    {finalBalance > 0.01 ? (partyType === "client" ? "(مستحق منه)" : "(مستحق له)") : ""}
+                    {fc(Math.abs(finalBalance))}{" "}
+                    {finalBalance > 0.01
+                      ? partyType === "client"
+                        ? "(مستحق منه)"
+                        : "(مستحق له)"
+                      : finalBalance < -0.01
+                      ? partyType === "client"
+                        ? "(له رصيد لدينا)"
+                        : "(لنا رصيد عنده)"
+                      : ""}
                   </span>
                 </div>
               </div>
