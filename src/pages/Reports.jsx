@@ -241,7 +241,9 @@ export function Reports({ data, getStockQty, org }) {
         ...c,
         total: sum(invs, "total_amount"),
         count: invs.length,
-        balance: allTimeInvs.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0),
+        balance:
+          allTimeInvs.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) -
+          (unappliedByClient[c.id] || 0),
       };
     })
     .filter((c) => c.total > 0)
