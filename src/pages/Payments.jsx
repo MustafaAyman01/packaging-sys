@@ -5,6 +5,8 @@ import { PAYMENT_METHODS } from "../constants/labels";
 export function Payments({ data, update, toast }) {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("invoice"); // "invoice" | "account"
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [editForm, setEditForm] = useState({});
   const [form, setForm] = useState({
     invoice_id: "",
     party_type: "client",
@@ -162,6 +164,74 @@ export function Payments({ data, update, toast }) {
       notes: "",
     });
   };
+  const partyName = (p) => {
+    if (p.party_id) {
+      const list = p.party_type === "client" ? data.clients : data.suppliers;
+      return list.find((x) => x.id === p.party_id)?.name || "—";
+    }
+    const inv = data.invoices.find((i) => i.id === p.invoice_id);
+    if (!inv) return "—";
+    const list = inv.type === "sale" ? data.clients : data.suppliers;
+    const id = inv.type === "sale" ? inv.client_id : inv.supplier_id;
+    return list.find((x) => x.id === id)?.name || "—";
+  };
+  const openEditPayment = (p) => {
+    setEditingPayment(p);
+    setEditForm({
+      amount: p.amount,
+      payment_date: p.payment_date,
+      method: p.method,
+      reference_number: p.reference_number || "",
+      notes: p.notes || "",
+    });
+  };
+  const saveEditPayment = () => {
+    const newAmount = +editForm.amount;
+    if (!newAmount || newAmount <= 0) {
+      toast("لازم تدخل مبلغ صحيح");
+      return;
+    }
+    const p = editingPayment;
+    const updatedPayment = {
+      ...p,
+      amount: newAmount,
+      payment_date: editForm.payment_date,
+      method: editForm.method,
+      reference_number: editForm.reference_number,
+      notes: editForm.notes,
+    };
+    update(
+      "payments",
+      data.payments.map((pp) => (pp.id === p.id ? updatedPayment : pp))
+    );
+    // لو الدفعة مربوطة بفاتورة معينة، نعدّل المبلغ المدفوع للفاتورة بالفرق فقط
+    if (p.invoice_id) {
+      const delta = newAmount - p.amount;
+      if (delta !== 0) {
+        update(
+          "invoices",
+          data.invoices.map((inv) => {
+            if (inv.id !== p.invoice_id) return inv;
+            const newPaid = Math.max(0, inv.paid_amount + delta);
+            return {
+              ...inv,
+              paid_amount: newPaid,
+              status:
+                newPaid >= inv.total_amount
+                  ? "paid"
+                  : newPaid > 0.009
+                  ? "partial"
+                  : inv.status === "cancelled"
+                  ? "cancelled"
+                  : "confirmed",
+            };
+          })
+        );
+      }
+    }
+    setEditingPayment(null);
+    toast("تم تعديل الدفعة ✓");
+  };
   const salePayments = data.payments.filter((p) => {
     if (p.party_type === "client") return true;
     if (p.party_type === "supplier") return false;
@@ -232,21 +302,30 @@ export function Payments({ data, update, toast }) {
           <thead>
             <tr>
               <th>التاريخ</th>
+              <th>الطرف</th>
               <th>الفاتورة</th>
               <th>المبلغ</th>
               <th>طريقة الدفع</th>
               <th>رقم المرجع</th>
               <th>ملاحظات</th>
+              <th />
             </tr>
           </thead>
           <tbody>
-            {[...salePayments]
+            {[...data.payments]
               .sort((a, b) => b.payment_date.localeCompare(a.payment_date))
               .map((p) => {
                 const inv = data.invoices.find((i) => i.id === p.invoice_id);
                 return (
                   <tr key={p.id}>
                     <td>{fd(p.payment_date)}</td>
+                    <td
+                      style={{
+                        fontWeight: 500,
+                      }}
+                    >
+                      {partyName(p)}
+                    </td>
                     <td
                       style={{
                         fontWeight: 500,
@@ -274,12 +353,17 @@ export function Payments({ data, update, toast }) {
                     >
                       {p.notes || "—"}
                     </td>
+                    <td>
+                      <button className="btn btn-secondary btn-sm" onClick={() => openEditPayment(p)}>
+                        ✏️ تعديل
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
           </tbody>
         </table>
-        {salePayments.length === 0 && (
+        {data.payments.length === 0 && (
           <div className="empty-state">
             <div className="icon">💰</div>
             <p>لا توجد مدفوعات</p>
@@ -470,6 +554,105 @@ export function Payments({ data, update, toast }) {
               </button>
               <button className="btn btn-primary" onClick={savePayment}>
                 تسجيل
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editingPayment && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">تعديل دفعة — {partyName(editingPayment)}</span>
+              <button className="close-btn" onClick={() => setEditingPayment(null)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>المبلغ *</label>
+                  <input
+                    type="number"
+                    value={editForm.amount}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        amount: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>تاريخ الدفع</label>
+                  <input
+                    type="date"
+                    value={editForm.payment_date}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        payment_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>طريقة الدفع</label>
+                  <select
+                    value={editForm.method}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        method: e.target.value,
+                      })
+                    }
+                  >
+                    {Object.entries(PAYMENT_METHODS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>رقم المرجع</label>
+                  <input
+                    value={editForm.reference_number}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        reference_number: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>ملاحظات</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      notes: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              {editingPayment.invoice_id && (
+                <div className="alert alert-warning">
+                  ⚠️ الدفعة دي مربوطة بفاتورة — تعديل المبلغ هيغيّر المبلغ المدفوع وحالة الفاتورة تلقائيًا.
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setEditingPayment(null)}>
+                إلغاء
+              </button>
+              <button className="btn btn-primary" onClick={saveEditPayment}>
+                حفظ التعديل
               </button>
             </div>
           </div>
