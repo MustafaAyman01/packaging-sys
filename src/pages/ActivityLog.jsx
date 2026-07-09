@@ -31,6 +31,30 @@ export function ActivityLog({ profile, toast }) {
   useEffect(() => {
     load();
   }, [filterTable, filterAction]);
+  // نحدد بس أهم الحقول اللي تفرق مع المستخدم لعرضها كملخص تغيير، عشان منغرقوش
+  // في تفاصيل تقنية كتير (زي id أو org_id)
+  const INTERESTING_FIELDS = {
+    invoices: [
+      ["paid_amount", "المبلغ المدفوع"],
+      ["status", "الحالة"],
+      ["total_amount", "الإجمالي"],
+    ],
+    payments: [
+      ["amount", "المبلغ"],
+      ["payment_date", "التاريخ"],
+      ["method", "طريقة الدفع"],
+    ],
+  };
+  const changeSummary = (log) => {
+    const label = log.details?.label || "—";
+    if (log.action !== "update" || !log.details?.old || !log.details?.new) return label;
+    const fields = INTERESTING_FIELDS[log.table_name];
+    if (!fields) return label;
+    const diffs = fields
+      .filter(([key]) => log.details.old[key] !== log.details.new[key])
+      .map(([key, ar]) => `${ar}: ${log.details.old[key] ?? "—"} ← ${log.details.new[key] ?? "—"}`);
+    return diffs.length ? `${label} (${diffs.join("، ")})` : label;
+  };
   return (
     <div>
       <div
@@ -99,6 +123,7 @@ export function ActivityLog({ profile, toast }) {
                 <th>المستخدم</th>
                 <th>العملية</th>
                 <th>القسم</th>
+                <th>التفاصيل</th>
               </tr>
             </thead>
             <tbody>
@@ -156,6 +181,15 @@ export function ActivityLog({ profile, toast }) {
                     </td>
                     <td>
                       <span className="tag">{ACTIVITY_TABLE_LABELS[log.table_name] || log.table_name}</span>
+                    </td>
+                    <td
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text2)",
+                        maxWidth: 320,
+                      }}
+                    >
+                      {changeSummary(log)}
                     </td>
                   </tr>
                 );

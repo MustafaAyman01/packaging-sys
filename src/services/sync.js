@@ -346,6 +346,7 @@ function itemLabel(item) {
     item?.invoice_number ||
     item?.party_name ||
     item?.full_name ||
+    (item?.amount != null ? `دفعة بمبلغ ${item.amount}` : null) ||
     (item?.id ? `#${String(item.id).slice(0, 8)}` : "—")
   );
 }
