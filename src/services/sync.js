@@ -339,15 +339,39 @@ export async function pushInitialData(orgId, localData) {
     if (error) console.error("pushInitialData error on", cfg.table, error);
   }
 }
-function itemLabel(item) {
+// وصف بديل مفهوم لليوزر لأنواع الجداول اللي مفيهاش اسم/عنوان واضح على مستوى
+// السجل نفسه (زي حركات المخزون أو أرصدة المخزون)، بدل ما نضطر نعرض الـ ID
+// الداخلي للسجل وهو شكل مش مفهوم للمستخدم العادي.
+function fallbackLabelByTable(item, tableName) {
+  switch (tableName) {
+    case "stock_movements": {
+      const typeLabels = {
+        in: "إضافة مخزون",
+        out: "صرف مخزون",
+        adjustment: "تسوية مخزون",
+      };
+      const type = typeLabels[item?.movement_type] || "حركة مخزون";
+      return item?.quantity != null ? `${type} (الكمية: ${item.quantity})` : type;
+    }
+    case "stock_levels":
+      return "تحديث رصيد المخزون";
+    case "manufacturing_orders":
+      return "أمر تصنيع";
+    default:
+      return null;
+  }
+}
+function itemLabel(item, tableName) {
   return (
     item?.name ||
     item?.title ||
     item?.invoice_number ||
+    item?.order_number ||
     item?.party_name ||
     item?.full_name ||
     (item?.amount != null ? `دفعة بمبلغ ${item.amount}` : null) ||
-    (item?.id ? `#${String(item.id).slice(0, 8)}` : "—")
+    fallbackLabelByTable(item, tableName) ||
+    "سجل بيانات"
   );
 }
 export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
@@ -372,7 +396,7 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
         table_name: cfg.table,
         record_id: id,
         details: {
-          label: itemLabel(item),
+          label: itemLabel(item, cfg.table),
           old: old ? pickFields(old, cfg.fields) : null,
           new: row,
         },
@@ -390,7 +414,7 @@ export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
         table_name: cfg.table,
         record_id: id,
         details: {
-          label: itemLabel(item),
+          label: itemLabel(item, cfg.table),
           old: pickFields(item, cfg.fields),
         },
       });
