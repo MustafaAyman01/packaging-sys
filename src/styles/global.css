@@ -504,14 +504,15 @@ textarea,
   margin-top: 1px;
 }
 .stat-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  margin-bottom: 4px;
+  font-size: 19px;
+  margin-bottom: 6px;
+  border: 1.5px solid var(--stat-icon-border, transparent);
 }
 
 /* ── Tables ── */

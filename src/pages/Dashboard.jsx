@@ -210,6 +210,7 @@ export function Dashboard({ data, setPage, getStockQty }) {
               className="stat-icon"
               style={{
                 background: s.bg,
+                "--stat-icon-border": s.border || "var(--accent-brass)",
               }}
             >
               {s.icon}

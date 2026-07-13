@@ -284,6 +284,7 @@ export function Reports({ data, getStockQty, org }) {
           className="stat-icon"
           style={{
             background: bg,
+            "--stat-icon-border": border || "var(--accent-brass)",
           }}
         >
           {icon}
@@ -660,6 +661,7 @@ export function Reports({ data, getStockQty, org }) {
                   className="stat-icon"
                   style={{
                     background: s.bg,
+                    "--stat-icon-border": s.color || "var(--accent-brass)",
                   }}
                 >
                   {s.icon}
