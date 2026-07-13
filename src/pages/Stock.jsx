@@ -19,8 +19,16 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
     if (!form.product_id || !form.quantity) return;
     const qty = +form.quantity;
     const currentQty = getStockQty(form.product_id);
-    const isAddition = form.movement_type === "in" || form.movement_type === "return_in";
-    const isDeduction = form.movement_type === "out" || form.movement_type === "return_out";
+    const isAdjustment = form.movement_type === "adjustment_in" || form.movement_type === "adjustment_out";
+    // التسوية بتتسجل في قاعدة البيانات بنوع in/out فعلي (عشان قيد قاعدة البيانات)
+    // وبنميّزها عن الوارد/الصادر العادي عن طريق reference_type
+    const actualMovementType = isAdjustment
+      ? form.movement_type === "adjustment_in"
+        ? "in"
+        : "out"
+      : form.movement_type;
+    const isAddition = actualMovementType === "in" || actualMovementType === "return_in";
+    const isDeduction = actualMovementType === "out" || actualMovementType === "return_out";
     if (isDeduction && currentQty < qty) {
       if (
         !confirm(
@@ -34,9 +42,10 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
       {
         ...form,
         id: generateId(),
+        movement_type: actualMovementType,
         quantity: qty,
         unit_cost: +form.unit_cost,
-        reference_type: form.movement_type,
+        reference_type: isAdjustment ? "adjustment" : actualMovementType,
         created_at: today(),
       },
     ]);
@@ -490,7 +499,8 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
                     <option value="out">⬆ صادر (خصم)</option>
                     <option value="return_in">↩️ مرتجع مبيعات (إضافة للمخزون)</option>
                     <option value="return_out">↪️ مرتجع مشتريات (خصم من المخزون)</option>
-                    <option value="adjustment">تسوية مخزون</option>
+                    <option value="adjustment_in">⚖️ تسوية (زيادة رصيد)</option>
+                    <option value="adjustment_out">⚖️ تسوية (نقص رصيد)</option>
                   </select>
                 </div>
                 <div className="form-group">
