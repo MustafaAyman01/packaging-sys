@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
 import { generateId, fc, fd, today } from "../utils/format";
 import { printStocktakeSheet } from "../features/print/printStocktakeSheet";
+import { printStockMovements } from "../features/print/printStockMovements";
 
 export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
   const [showModal, setShowModal] = useState(false);
   const [tab, setTab] = useState("movements");
   const [counts, setCounts] = useState({});
   const [stocktakeSearch, setStocktakeSearch] = useState("");
+  const [movementsSearch, setMovementsSearch] = useState("");
   const [form, setForm] = useState({
     product_id: "",
     movement_type: "in",
@@ -60,7 +62,18 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
     });
     toast("تم تسجيل حركة المخزون ✓");
   };
-  const movements = [...data.stock_movements].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const movements = [...data.stock_movements]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .filter((m) => {
+      if (!movementsSearch) return true;
+      const prod = data.products.find((p) => p.id === m.product_id);
+      const q = movementsSearch.toLowerCase();
+      return (
+        prod?.name?.toLowerCase().includes(q) ||
+        (prod?.sku || "").toLowerCase().includes(q) ||
+        (m.notes || "").toLowerCase().includes(q)
+      );
+    });
   const stocktakeRows = data.products
     .filter((p) => p.is_active)
     .filter(
@@ -335,12 +348,43 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
           <div
             style={{
               marginBottom: 16,
-              textAlign: "left",
+              display: "flex",
+              gap: 12,
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
             }}
           >
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              + تسجيل حركة مخزون
-            </button>
+            <div
+              className="form-group"
+              style={{
+                minWidth: 220,
+                marginBottom: 0,
+              }}
+            >
+              <label>بحث بالمنتج أو الكود أو الملاحظات</label>
+              <input
+                value={movementsSearch}
+                onChange={(e) => setMovementsSearch(e.target.value)}
+                placeholder="اكتب للبحث..."
+              />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+              }}
+            >
+              <button
+                className="btn btn-secondary"
+                onClick={() => printStockMovements(movements, data.products, data.units, org)}
+              >
+                🖨️ طباعة
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                + تسجيل حركة مخزون
+              </button>
+            </div>
           </div>
           <div className="card">
             <table>
