@@ -41,7 +41,7 @@ td{padding:6px;border-bottom:1px solid #e5e1d8}
 .signatures{margin-top:50px;display:flex;justify-content:space-between}
 .sig{width:30%;text-align:center}
 .sig .line{border-top:1px solid #1a1814;margin-top:40px;padding-top:6px;font-size:12px}
-.print-btn{position:fixed;bottom:20px;left:20px;background:#0d7a7a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600}
+.print-btn{position:fixed;bottom:20px;left:20px;background:#A9743E;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600}
 @media print{.print-btn{display:none}}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>

@@ -40,7 +40,7 @@ h1{font-size:19px;margin-bottom:4px}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th{background:#1a1814;color:#fff;padding:7px 6px;text-align:center;font-weight:500;font-size:10.5px}
 td{padding:6px;border-bottom:1px solid #e5e1d8}
-.print-btn{position:fixed;bottom:20px;left:20px;background:#0d7a7a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600}
+.print-btn{position:fixed;bottom:20px;left:20px;background:#A9743E;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600}
 @media print{.print-btn{display:none}}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>

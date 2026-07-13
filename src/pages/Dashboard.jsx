@@ -201,7 +201,7 @@ export function Dashboard({ data, setPage, getStockQty }) {
             className="stat-card"
             key={i}
             style={{
-              borderRightColor: s.border || "var(--accent-teal)",
+              borderRightColor: s.border || "var(--accent-brass)",
               cursor: s.onClick ? "pointer" : "default",
             }}
             onClick={s.onClick}

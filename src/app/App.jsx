@@ -533,7 +533,7 @@ export function App({ features, session, profile, trialEndsAt }) {
               style={{
                 height: "100%",
                 width: "45%",
-                background: "var(--accent-teal)",
+                background: "var(--accent-brass)",
                 borderRadius: 99,
                 animation: "loading-bar 1.4s ease-in-out infinite",
               }}
@@ -593,11 +593,21 @@ export function App({ features, session, profile, trialEndsAt }) {
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    borderRadius: 10,
+                    borderRadius: "50%",
                   }}
                 />
               ) : (
-                "👖"
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
+                  <path d="M4 4h16M4 20h16" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M4 4c4 2.3 8 4.2 8 8s-4 5.7-8 8M20 4c-4 2.3-8 4.2-8 8s4 5.7 8 8"
+                    stroke="#fff"
+                    strokeWidth="1.4"
+                    fill="none"
+                    opacity="0.9"
+                  />
+                  <path d="M5.5 8h13M5.5 16h13" stroke="#fff" strokeWidth="1" opacity="0.45" />
+                </svg>
               )}
             </div>
             <div>

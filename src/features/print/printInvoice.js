@@ -82,12 +82,12 @@ export function printInvoice(inv, data, org) {
   /* ─── HEADER ─── */
   .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;padding-bottom:5mm;border-bottom:3px solid #1a1814}
   .brand{display:flex;align-items:center;gap:10px}
-  .brand-icon{width:44px;height:44px;background:#0d7a7a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .brand-icon{width:44px;height:44px;background:#A9743E;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
   .brand-name{font-size:20px;font-weight:700;color:#1a1814;line-height:1.2}
   .brand-sub{font-size:11px;color:#6b6456;margin-top:2px}
   .inv-meta{text-align:left}
   .inv-type{font-size:11px;color:#9c9080;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-  .inv-num{font-size:24px;font-weight:700;color:#0d7a7a;line-height:1}
+  .inv-num{font-size:24px;font-weight:700;color:#A9743E;line-height:1}
   .inv-dates{margin-top:6px;font-size:11px;color:#6b6456;line-height:1.7}
   .inv-dates strong{color:#1a1814}
   .status-pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-top:6px;background:${st.bg};color:${st.color}}
@@ -133,7 +133,7 @@ export function printInvoice(inv, data, org) {
     .page{padding:8mm 10mm}
     .no-screen{display:block}
   }
-  .print-btn{position:fixed;bottom:20px;left:20px;background:#0d7a7a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;box-shadow:0 4px 12px rgba(13,122,122,.4);z-index:99}
+  .print-btn{position:fixed;bottom:20px;left:20px;background:#A9743E;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;box-shadow:0 4px 12px rgba(169,116,62,.4);z-index:99}
   .print-btn:hover{background:#0a5e5e}
   @media print{.print-btn{display:none}}
 </style>

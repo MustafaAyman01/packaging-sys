@@ -40,86 +40,88 @@ html {
 }
 
 :root {
-  /* ── Palette (Light) ── */
-  --bg: #eef1f6;
+  /* ═══ هوية بصرية: "دفتر مصنع النسيج" — نيلي الصباغة + نحاس البكرات فوق قماش خام ═══ */
+
+  /* ── الخلفيات: قماش خام غير مبيّض، مش كريمي ولا رمادي بارد ── */
+  --bg: #edeee6;
   --surface: #ffffff;
-  --surface2: #f6f8fb;
-  --surface3: #edf0f6;
-  --surface-hover: #f8f9fc;
-  --border: #e1e5ed;
-  --border2: #ccd3e0;
+  --surface2: #f6f6f0;
+  --surface3: #ecede4;
+  --surface-hover: #f8f8f2;
+  --border: #dedfd2;
+  --border2: #c6c7b6;
 
-  /* ── Text ── */
-  --text: #0f1523;
-  --text2: #4a5568;
-  --text3: #8a95a8;
+  /* ── النصوص: حبر دافئ على الورق ── */
+  --text: #1c1b16;
+  --text2: #55564a;
+  --text3: #8f8d7b;
 
-  /* ── Brand: deep slate-navy + teal accent ── */
-  --accent: #16324f;
-  --accent2: #0f2238;
-  --accent-teal: #0d8a8a;
-  --accent-teal2: #0a6e6e;
-  --accent-light: #e8f4f8;
+  /* ── الهوية: نيلي صباغة عميق + نحاس بكرات الخيط ── */
+  --accent: #2c3663;
+  --accent2: #191f3d;
+  --accent-brass: #a9743e;
+  --accent-brass2: #8a5f32;
+  --accent-light: #f3e8d8;
 
-  /* ── Status ── */
-  --green: #0d9e6a;
-  --green-bg: #e6f7f1;
-  --green-border: #9de8cc;
-  --green-hover: #c8f0e2;
-  --red: #d63250;
-  --red-bg: #fce8ec;
-  --red-border: #f5c0cb;
-  --red-hover: #f9d0d8;
-  --amber: #c47f0a;
-  --amber-bg: #fdf3e0;
-  --amber-border: #f0cc7a;
-  --amber-text: #7a4f00;
-  --green-text: #065f46;
-  --blue: #1a5fbd;
-  --blue-bg: #e8f0fd;
+  /* ── الحالات: مطعّمة بنفس الطيف الدافئ بدل ألوان SaaS القياسية ── */
+  --green: #3c8a63;
+  --green-bg: #e9f3ec;
+  --green-border: #b8d9c4;
+  --green-hover: #daeee1;
+  --red: #b23a48;
+  --red-bg: #f7e8e9;
+  --red-border: #e3b5bb;
+  --red-hover: #f1d3d7;
+  --amber: #bd7d1f;
+  --amber-bg: #fbf1de;
+  --amber-border: #ecce9c;
+  --amber-text: #7a4f0f;
+  --green-text: #285c3f;
+  --blue: #3c5a8a;
+  --blue-bg: #e8ecf5;
 
   --sidebar-w: 230px;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 4px rgba(15, 21, 35, 0.06), 0 4px 16px rgba(15, 21, 35, 0.04);
-  --shadow-md: 0 4px 20px rgba(15, 21, 35, 0.1);
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 4px rgba(28, 27, 22, 0.07), 0 4px 16px rgba(28, 27, 22, 0.05);
+  --shadow-md: 0 4px 20px rgba(28, 27, 22, 0.12);
 }
 
-/* ── Palette (Dark) ── */
+/* ── الهوية (الوضع الليلي): نفس دفتر المصنع، تحت إضاءة خافتة ── */
 [data-theme="dark"] {
-  --bg: #0b0d13;
-  --surface: #14171f;
-  --surface2: #10131a;
-  --surface3: #1b1f2a;
-  --surface-hover: #191d27;
-  --border: #232733;
-  --border2: #2f3543;
+  --bg: #100f1a;
+  --surface: #191a28;
+  --surface2: #141420;
+  --surface3: #212234;
+  --surface-hover: #1d1e2c;
+  --border: #2a2b3e;
+  --border2: #383a51;
 
-  --text: #eef0f5;
-  --text2: #9aa1b2;
-  --text3: #676e80;
+  --text: #edeee5;
+  --text2: #a3a3b5;
+  --text3: #6b6b82;
 
-  --accent: #141d2c;
-  --accent2: #0c1119;
-  --accent-teal: #1fae94;
-  --accent-teal2: #178f79;
-  --accent-light: #0e2420;
+  --accent: #222a4d;
+  --accent2: #12162c;
+  --accent-brass: #c99a5c;
+  --accent-brass2: #ad8148;
+  --accent-light: #2b2314;
 
-  --green: #2fbf85;
-  --green-bg: #112420;
-  --green-border: #1e5c46;
-  --green-hover: #163a2d;
-  --red: #ec6b62;
-  --red-bg: #271417;
-  --red-border: #6e2c33;
-  --red-hover: #331a1e;
-  --amber: #e6ac48;
-  --amber-bg: #241d0c;
-  --amber-border: #6b551f;
-  --amber-text: #e6ac48;
-  --green-text: #2fbf85;
-  --blue: #5b93e8;
-  --blue-bg: #121f30;
+  --green: #4fae7e;
+  --green-bg: #142a20;
+  --green-border: #2c6146;
+  --green-hover: #1b3b2c;
+  --red: #e08088;
+  --red-bg: #2c161a;
+  --red-border: #6e3038;
+  --red-hover: #3a1d22;
+  --amber: #d9a257;
+  --amber-bg: #2a2013;
+  --amber-border: #6b4f26;
+  --amber-text: #d9a257;
+  --green-text: #4fae7e;
+  --blue: #7f9cd6;
+  --blue-bg: #1a2436;
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 12px 36px rgba(0, 0, 0, 0.55);
@@ -136,18 +138,18 @@ html {
     -4px 0 28px rgba(0, 0, 0, 0.4);
 }
 [data-theme="dark"] .logo-icon {
-  box-shadow: 0 2px 10px rgba(31, 174, 148, 0.3);
+  box-shadow: 0 2px 10px rgba(201, 154, 92, 0.3);
 }
 [data-theme="dark"] .nav-item.active {
-  background: rgba(31, 174, 148, 0.14);
+  background: rgba(201, 154, 92, 0.14);
   color: #fff;
-  box-shadow: inset 3px 0 0 var(--accent-teal);
+  box-shadow: inset 3px 0 0 var(--accent-brass);
 }
 [data-theme="dark"] .btn-primary {
-  box-shadow: 0 2px 8px rgba(31, 174, 148, 0.22);
+  box-shadow: 0 2px 8px rgba(201, 154, 92, 0.22);
 }
 [data-theme="dark"] .btn-primary:hover {
-  box-shadow: 0 4px 16px rgba(31, 174, 148, 0.3);
+  box-shadow: 0 4px 16px rgba(201, 154, 92, 0.3);
 }
 
 /* ── Smooth theme transition on key surfaces ── */
@@ -188,8 +190,8 @@ textarea,
 }
 .theme-toggle:hover {
   background: var(--surface2);
-  border-color: var(--accent-teal);
-  color: var(--accent-teal);
+  border-color: var(--accent-brass);
+  color: var(--accent-brass);
 }
 
 /* ── Layout ── */
@@ -229,14 +231,14 @@ textarea,
 .logo-icon {
   width: 38px;
   height: 38px;
-  background: var(--accent-teal);
-  border-radius: 10px;
+  background: var(--accent-brass);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 19px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(13, 122, 122, 0.4);
+  box-shadow: 0 2px 8px rgba(169, 116, 62, 0.4);
 }
 .logo-title {
   font-size: 15px;
@@ -280,10 +282,10 @@ textarea,
   color: #fff;
 }
 .nav-item.active {
-  background: var(--accent-teal);
+  background: var(--accent-brass);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(13, 122, 122, 0.35);
+  box-shadow: 0 2px 8px rgba(169, 116, 62, 0.35);
 }
 .nav-icon {
   font-size: 15px;
@@ -364,13 +366,13 @@ textarea,
   letter-spacing: -0.01em;
 }
 .btn-primary {
-  background: var(--accent-teal);
+  background: var(--accent-brass);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(13, 122, 122, 0.25);
+  box-shadow: 0 2px 6px rgba(169, 116, 62, 0.25);
 }
 .btn-primary:hover {
-  background: var(--accent-teal2);
-  box-shadow: 0 4px 12px rgba(13, 122, 122, 0.35);
+  background: var(--accent-brass2);
+  box-shadow: 0 4px 12px rgba(169, 116, 62, 0.35);
   transform: translateY(-1px);
 }
 .btn-secondary {
@@ -440,7 +442,7 @@ textarea,
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  border-right: 3px solid var(--accent-teal);
+  border-right: 3px solid var(--accent-brass);
   padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
@@ -591,8 +593,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--accent-teal);
-  box-shadow: 0 0 0 3px rgba(13, 122, 122, 0.12);
+  border-color: var(--accent-brass);
+  box-shadow: 0 0 0 3px rgba(169, 116, 62, 0.12);
 }
 input:hover,
 select:hover,
@@ -739,10 +741,23 @@ textarea {
   color: var(--green-text);
 }
 
+/* ── الكود/المرجع: شكل "تاج" القماش المدبوس — خط مونو وحدّ متقطع كالغرزة ── */
+code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.9em;
+  font-weight: 500;
+  background: var(--surface3);
+  border: 1px dashed var(--border2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text2);
+  letter-spacing: 0.02em;
+}
+
 /* ── Divider ── */
 .divider {
-  height: 1px;
-  background: var(--border);
+  height: 0;
+  border-top: 1px dashed var(--border2);
   margin: 20px 0;
 }
 
@@ -820,8 +835,8 @@ textarea {
   font-weight: 500;
 }
 .tab.active {
-  color: var(--accent-teal);
-  border-bottom-color: var(--accent-teal);
+  color: var(--accent-brass);
+  border-bottom-color: var(--accent-brass);
   font-weight: 700;
   background: var(--accent-light);
 }
