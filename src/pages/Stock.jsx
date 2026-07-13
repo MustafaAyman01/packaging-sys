@@ -10,6 +10,7 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
   const [counts, setCounts] = useState({});
   const [stocktakeSearch, setStocktakeSearch] = useState("");
   const [movementsSearch, setMovementsSearch] = useState("");
+  const [movementsTypeFilter, setMovementsTypeFilter] = useState("");
   const [form, setForm] = useState({
     product_id: "",
     movement_type: "in",
@@ -62,9 +63,16 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
     });
     toast("تم تسجيل حركة المخزون ✓");
   };
+  // النوع الفعلي للحركة اللي بنعرضه كشارة/بنفلتر بيه: نفس منطق شارة الجدول —
+  // بنفضّل reference_type لو كانت هالك/زيادة/تسوية، وإلا بناخد movement_type
+  const movementCategory = (m) =>
+    m.reference_type === "waste" || m.reference_type === "surplus" || m.reference_type === "adjustment"
+      ? m.reference_type
+      : m.movement_type;
   const movements = [...data.stock_movements]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .filter((m) => {
+      if (movementsTypeFilter && movementCategory(m) !== movementsTypeFilter) return false;
       if (!movementsSearch) return true;
       const prod = data.products.find((p) => p.id === m.product_id);
       const q = movementsSearch.toLowerCase();
@@ -370,6 +378,25 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
               />
             </div>
             <div
+              className="form-group"
+              style={{
+                minWidth: 160,
+                marginBottom: 0,
+              }}
+            >
+              <label>نوع الحركة</label>
+              <select value={movementsTypeFilter} onChange={(e) => setMovementsTypeFilter(e.target.value)}>
+                <option value="">الكل</option>
+                <option value="in">⬇ وارد</option>
+                <option value="out">⬆ صادر</option>
+                <option value="return_in">↩️ مرتجع مبيعات</option>
+                <option value="return_out">↪️ مرتجع مشتريات</option>
+                <option value="adjustment">⚖️ تسوية</option>
+                <option value="waste">🗑️ هالك</option>
+                <option value="surplus">➕ زيادة</option>
+              </select>
+            </div>
+            <div
               style={{
                 display: "flex",
                 gap: 10,
@@ -447,12 +474,7 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
                           };
                           // هالك/زيادة بتتسجل بنوع in/out أصلي (عشان قيد قاعدة البيانات)
                           // لكن بنميّزها هنا عن طريق reference_type
-                          const c =
-                            map[
-                              m.reference_type === "waste" || m.reference_type === "surplus" || m.reference_type === "adjustment"
-                                ? m.reference_type
-                                : m.movement_type
-                            ] || map.in;
+                          const c = map[movementCategory(m)] || map.in;
                           return (
                             <span
                               className="badge"
