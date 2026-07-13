@@ -461,7 +461,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     dashboard: <Dashboard data={data} setPage={setPage} getStockQty={getStockQty} />,
     products: <Products data={data} update={update} updateStock={updateStock} getStockQty={getStockQty} toast={toast} />,
     stock: (
-      <Stock data={data} update={update} getStockQty={getStockQty} updateStock={updateStock} toast={toast} />
+      <Stock data={data} update={update} getStockQty={getStockQty} updateStock={updateStock} toast={toast} org={org} />
     ),
     manufacturing_orders: <ManufacturingOrders data={data} update={update} updateStock={updateStock} toast={toast} />,
     invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} />,

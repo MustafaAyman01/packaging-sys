@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
 import { generateId, fc, fd, today } from "../utils/format";
+import { printStocktakeSheet } from "../features/print/printStocktakeSheet";
 
-export function Stock({ data, update, getStockQty, updateStock, toast }) {
+export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
   const [showModal, setShowModal] = useState(false);
   const [tab, setTab] = useState("movements");
+  const [counts, setCounts] = useState({});
+  const [stocktakeSearch, setStocktakeSearch] = useState("");
   const [form, setForm] = useState({
     product_id: "",
     movement_type: "in",
@@ -49,6 +52,62 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
     toast("تم تسجيل حركة المخزون ✓");
   };
   const movements = [...data.stock_movements].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const stocktakeRows = data.products
+    .filter((p) => p.is_active)
+    .filter(
+      (p) =>
+        !stocktakeSearch ||
+        p.name.toLowerCase().includes(stocktakeSearch.toLowerCase()) ||
+        (p.sku || "").toLowerCase().includes(stocktakeSearch.toLowerCase())
+    )
+    .map((p) => {
+      const unit = data.units.find((u) => u.id === p.unit_id);
+      const system = getStockQty(p.id);
+      const countedRaw = counts[p.id];
+      const counted = countedRaw === undefined || countedRaw === "" ? "" : countedRaw;
+      const diff = counted === "" ? 0 : +counted - system;
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        unit: unit?.abbreviation || "",
+        system,
+        counted,
+        diff,
+        diffValue: diff * (p.cost_price || 0),
+        cost_price: p.cost_price || 0,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  const stocktakeDiffCount = stocktakeRows.filter((r) => r.counted !== "" && r.diff !== 0).length;
+  const applyStocktake = () => {
+    const toApply = stocktakeRows.filter((r) => r.counted !== "" && r.diff !== 0);
+    if (toApply.length === 0) {
+      toast("مفيش فروقات لتطبيقها");
+      return;
+    }
+    if (
+      !confirm(
+        `هيتم تسجيل تسوية مخزون لـ ${toApply.length} صنف وتحديث الأرصدة فورًا. متأكد إنك عايز تطبق نتيجة الجرد؟`
+      )
+    )
+      return;
+    const sessionLabel = `جرد ${fd(today())}`;
+    const newMovements = toApply.map((r) => ({
+      id: generateId(),
+      product_id: r.id,
+      movement_type: r.diff > 0 ? "in" : "out",
+      quantity: Math.abs(r.diff),
+      unit_cost: r.cost_price,
+      reference_type: "adjustment",
+      notes: `${sessionLabel} — الرصيد الدفتري ${r.system} والفعلي ${r.counted}`,
+      created_at: today(),
+    }));
+    update("stock_movements", [...data.stock_movements, ...newMovements]);
+    toApply.forEach((r) => updateStock(r.id, r.diff));
+    toast(`تم تطبيق تسوية الجرد على ${toApply.length} صنف ✓`);
+    setCounts({});
+  };
   return (
     <div>
       <div className="tabs">
@@ -57,6 +116,9 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
         </div>
         <div className={`tab${tab === "levels" ? " active" : ""}`} onClick={() => setTab("levels")}>
           مستوى المخزون
+        </div>
+        <div className={`tab${tab === "stocktake" ? " active" : ""}`} onClick={() => setTab("stocktake")}>
+          📋 جرد المخزون
         </div>
       </div>
       {tab === "levels" && (
@@ -125,6 +187,139 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
             </tbody>
           </table>
         </div>
+      )}
+      {tab === "stocktake" && (
+        <React.Fragment>
+          <div
+            className="card"
+            style={{
+              marginBottom: 16,
+            }}
+          >
+            <div
+              className="card-body"
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+              }}
+            >
+              <div
+                className="form-group"
+                style={{
+                  minWidth: 220,
+                  marginBottom: 0,
+                }}
+              >
+                <label>بحث بالاسم أو الكود</label>
+                <input
+                  value={stocktakeSearch}
+                  onChange={(e) => setStocktakeSearch(e.target.value)}
+                  placeholder="اكتب اسم المنتج أو الكود..."
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                }}
+              >
+                <button
+                  className="btn btn-secondary"
+                  onClick={() =>
+                    printStocktakeSheet(stocktakeRows, org, {
+                      date: today(),
+                      sessionLabel: fd(today()),
+                    })
+                  }
+                >
+                  🖨️ طباعة محضر الجرد
+                </button>
+                <button className="btn btn-primary" onClick={applyStocktake} disabled={stocktakeDiffCount === 0}>
+                  ✅ تطبيق التسويات ({stocktakeDiffCount})
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>الكود</th>
+                  <th>الرصيد الدفتري</th>
+                  <th>الجرد الفعلي</th>
+                  <th>الفرق</th>
+                  <th>قيمة الفرق</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stocktakeRows.map((r) => (
+                  <tr key={r.id}>
+                    <td
+                      style={{
+                        fontWeight: 500,
+                      }}
+                    >
+                      {r.name}
+                    </td>
+                    <td>
+                      <code
+                        style={{
+                          fontSize: 12,
+                        }}
+                      >
+                        {r.sku}
+                      </code>
+                    </td>
+                    <td>
+                      {r.system.toLocaleString()} {r.unit}
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={counts[r.id] ?? ""}
+                        onChange={(e) =>
+                          setCounts({
+                            ...counts,
+                            [r.id]: e.target.value,
+                          })
+                        }
+                        placeholder="—"
+                        style={{
+                          width: 100,
+                        }}
+                      />
+                    </td>
+                    <td
+                      style={{
+                        fontWeight: 700,
+                        color: r.counted === "" ? "var(--text3)" : r.diff > 0 ? "var(--green)" : r.diff < 0 ? "var(--red)" : "var(--text2)",
+                      }}
+                    >
+                      {r.counted === "" ? "—" : (r.diff > 0 ? "+" : "") + r.diff.toLocaleString()}
+                    </td>
+                    <td
+                      style={{
+                        color: r.counted === "" || r.diff === 0 ? "var(--text3)" : r.diff > 0 ? "var(--green)" : "var(--red)",
+                      }}
+                    >
+                      {r.counted === "" || r.diff === 0 ? "—" : fc(r.diffValue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {stocktakeRows.length === 0 && (
+              <div className="empty-state">
+                <div className="icon">📋</div>
+                <p>لا توجد أصناف</p>
+              </div>
+            )}
+          </div>
+        </React.Fragment>
       )}
       {tab === "movements" && (
         <React.Fragment>
@@ -200,8 +395,11 @@ export function Stock({ data, update, getStockQty, updateStock, toast }) {
                           // هالك/زيادة بتتسجل بنوع in/out أصلي (عشان قيد قاعدة البيانات)
                           // لكن بنميّزها هنا عن طريق reference_type
                           const c =
-                            map[m.reference_type === "waste" || m.reference_type === "surplus" ? m.reference_type : m.movement_type] ||
-                            map.in;
+                            map[
+                              m.reference_type === "waste" || m.reference_type === "surplus" || m.reference_type === "adjustment"
+                                ? m.reference_type
+                                : m.movement_type
+                            ] || map.in;
                           return (
                             <span
                               className="badge"
