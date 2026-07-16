@@ -105,7 +105,7 @@ export function Dashboard({ data, setPage, getStockQty }) {
       icon: "⏳",
       bg: "var(--amber-bg)",
       border: "var(--amber)",
-      onClick: () => setPage("invoices"),
+      onClick: () => setPage("payments"),
     },
     {
       label: "مستحقات للموردين",
@@ -114,7 +114,7 @@ export function Dashboard({ data, setPage, getStockQty }) {
       icon: "📤",
       bg: "var(--amber-bg)",
       border: "var(--amber)",
-      onClick: () => setPage("suppliers"),
+      onClick: () => setPage("payments"),
     },
     {
       label: "إجمالي المشتريات",
