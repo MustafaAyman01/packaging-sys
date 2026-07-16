@@ -39,6 +39,20 @@ export function Payments({ data, update, toast }) {
     const client = data.clients.find((c) => c.id === i.client_id);
     return i.invoice_number.toLowerCase().includes(q) || (client?.name || "").toLowerCase().includes(q);
   });
+  // نفس منطق حساب الرصيد في صفحة العملاء/الموردين: صافي الفواتير مطروح منه أي دفعة
+  // زيادة "على الحساب" مش مربوطة بفاتورة معينة
+  const partyBalance = (partyType, partyId) => {
+    if (!partyId) return 0;
+    const invField = partyType === "client" ? "client_id" : "supplier_id";
+    const invType = partyType === "client" ? "sale" : "purchase";
+    const invBalance = data.invoices
+      .filter((i) => i[invField] === partyId && i.type === invType && i.status !== "cancelled")
+      .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0);
+    const unapplied = data.payments
+      .filter((p) => !p.invoice_id && p.party_type === partyType && p.party_id === partyId)
+      .reduce((s, p) => s + p.amount, 0);
+    return invBalance - unapplied;
+  };
   const unpaidForParty = (partyType, partyId) => {
     const field = partyType === "client" ? "client_id" : "supplier_id";
     const invType = partyType === "client" ? "sale" : "purchase";
@@ -577,15 +591,63 @@ export function Payments({ data, update, toast }) {
                       </select>
                     </div>
                   </div>
+                  {form.party_id &&
+                    (() => {
+                      const balance = partyBalance(form.party_type, form.party_id);
+                      const isClient = form.party_type === "client";
+                      // بنفس منطق كشف الحساب: موجب = مستحق منه/عليه، سالب = هو اللي له رصيد عندنا
+                      const owesUs = balance > 0.01;
+                      const weOwe = balance < -0.01;
+                      return (
+                        <div
+                          className="alert alert-success"
+                          style={{
+                            marginBottom: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span>
+                            {owesUs ? (
+                              <React.Fragment>
+                                <strong>{fc(balance)}</strong> {isClient ? "مستحق منه" : "مستحق له"}
+                              </React.Fragment>
+                            ) : weOwe ? (
+                              <React.Fragment>
+                                <strong>{fc(-balance)}</strong> {isClient ? "له رصيد عندنا" : "لنا رصيد عنده"}
+                              </React.Fragment>
+                            ) : (
+                              "الحساب متصفّر بالفعل"
+                            )}
+                          </span>
+                          {owesUs && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() =>
+                                setForm({
+                                  ...form,
+                                  amount: balance.toFixed(2),
+                                })
+                              }
+                            >
+                              💰 صفّر الحساب ({fc(balance)})
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   {form.party_id && (
                     <div
-                      className="alert alert-success"
                       style={{
-                        marginBottom: 0,
+                        fontSize: 12,
+                        color: "var(--text3)",
                       }}
                     >
-                      سيتم توزيع المبلغ تلقائيًا على أقدم الفواتير المستحقة لهذا الطرف، وأي مبلغ متبقي سيستقر
-                      كمقدم لحين وجود فاتورة جديدة.
+                      سيتم توزيع المبلغ تلقائيًا على أقدم الفواتير المستحقة، وأي مبلغ زيادة يُسجَّل كرصيد له.
                     </div>
                   )}
                 </React.Fragment>
