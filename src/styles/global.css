@@ -510,9 +510,10 @@ textarea,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 18px;
+  line-height: 1;
   margin-bottom: 6px;
-  border: 1.5px solid var(--stat-icon-border, transparent);
+  overflow: hidden;
 }
 
 /* ── Tables ── */
