@@ -138,7 +138,7 @@ export function Dashboard({ data, setPage, getStockQty }) {
       label: "رواتب مدفوعة",
       value: fc(totalSalariesPaid),
       sub: "إجمالي ما تم صرفه",
-      icon: "🧑‍💼",
+      icon: "🪪",
       bg: "var(--blue-bg)",
       border: "var(--blue)",
       onClick: () => setPage("hr"),

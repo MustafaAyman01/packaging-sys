@@ -494,7 +494,7 @@ export function Reports({ data, getStockQty, org }) {
               value={totalSalariesExp}
               prev={null}
               prevVal={undefined}
-              icon="🧑‍💼"
+              icon="🪪"
               bg="var(--blue-bg)"
               border="var(--blue)"
             />

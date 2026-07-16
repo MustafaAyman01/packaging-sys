@@ -406,7 +406,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     {
       id: "hr",
       label: "الموارد البشرية",
-      icon: "🧑‍💼",
+      icon: "🪪",
       group: "الموارد البشرية",
       feature: "hr",
       roles: ["owner", "admin", "accountant"],
