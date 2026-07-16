@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { generateId, fc, fd, today } from "../utils/format";
 import { PAYMENT_METHODS } from "../constants/labels";
 
@@ -8,6 +8,17 @@ export function Payments({ data, update, toast }) {
   const [editingPayment, setEditingPayment] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
+  const invoicePickerRef = useRef(null);
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (invoicePickerRef.current && !invoicePickerRef.current.contains(e.target)) {
+        setInvoicePickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
   const [form, setForm] = useState({
     invoice_id: "",
     party_type: "client",
@@ -161,6 +172,7 @@ export function Payments({ data, update, toast }) {
     }
     setShowModal(false);
     setInvoiceSearch("");
+    setInvoicePickerOpen(false);
     setForm({
       invoice_id: "",
       party_type: "client",
@@ -410,43 +422,119 @@ export function Payments({ data, update, toast }) {
               {mode === "invoice" ? (
                 <div className="form-group">
                   <label>الفاتورة *</label>
-                  <input
-                    value={invoiceSearch}
-                    onChange={(e) => setInvoiceSearch(e.target.value)}
-                    placeholder="بحث برقم الفاتورة أو اسم العميل..."
+                  <div
+                    ref={invoicePickerRef}
                     style={{
-                      marginBottom: 8,
-                    }}
-                  />
-                  <select
-                    value={form.invoice_id}
-                    onChange={(e) => {
-                      const inv = data.invoices.find((i) => i.id === e.target.value);
-                      setForm({
-                        ...form,
-                        invoice_id: e.target.value,
-                        amount: inv ? (inv.total_amount - inv.paid_amount).toFixed(2) : "",
-                      });
+                      position: "relative",
                     }}
                   >
-                    <option value="">اختر فاتورة</option>
-                    {filteredUnpaid.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.invoice_number} — متبقي {fc(i.total_amount - i.paid_amount)}
-                      </option>
-                    ))}
-                  </select>
-                  {invoiceSearch && filteredUnpaid.length === 0 && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text3)",
-                        marginTop: 6,
+                    <input
+                      value={
+                        invoicePickerOpen
+                          ? invoiceSearch
+                          : form.invoice_id
+                          ? data.invoices.find((i) => i.id === form.invoice_id)?.invoice_number || ""
+                          : ""
+                      }
+                      onFocus={() => {
+                        setInvoicePickerOpen(true);
+                        setInvoiceSearch("");
                       }}
-                    >
-                      لا توجد فواتير مطابقة
-                    </div>
-                  )}
+                      onChange={(e) => {
+                        setInvoiceSearch(e.target.value);
+                        setInvoicePickerOpen(true);
+                      }}
+                      placeholder="اكتب أي رقم أو جزء من رقم الفاتورة أو اسم العميل..."
+                      autoComplete="off"
+                    />
+                    {invoicePickerOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "calc(100% + 4px)",
+                          right: 0,
+                          left: 0,
+                          background: "var(--surface)",
+                          border: "1.5px solid var(--border2)",
+                          borderRadius: "var(--radius-sm)",
+                          boxShadow: "var(--shadow-md)",
+                          maxHeight: 260,
+                          overflowY: "auto",
+                          zIndex: 300,
+                        }}
+                      >
+                        {filteredUnpaid.length === 0 && (
+                          <div
+                            style={{
+                              padding: "12px 14px",
+                              fontSize: 13,
+                              color: "var(--text3)",
+                            }}
+                          >
+                            لا توجد فواتير مطابقة
+                          </div>
+                        )}
+                        {filteredUnpaid.map((i) => {
+                          const client = data.clients.find((c) => c.id === i.client_id);
+                          return (
+                            <div
+                              key={i.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setForm({
+                                  ...form,
+                                  invoice_id: i.id,
+                                  amount: (i.total_amount - i.paid_amount).toFixed(2),
+                                });
+                                setInvoicePickerOpen(false);
+                                setInvoiceSearch("");
+                              }}
+                              style={{
+                                padding: "9px 14px",
+                                cursor: "pointer",
+                                fontSize: 13.5,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 8,
+                                borderBottom: "1px solid var(--border)",
+                              }}
+                            >
+                              <span>
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {i.invoice_number}
+                                </span>
+                                {client && (
+                                  <span
+                                    style={{
+                                      color: "var(--text3)",
+                                      fontSize: 11.5,
+                                      marginRight: 8,
+                                    }}
+                                  >
+                                    {client.name}
+                                  </span>
+                                )}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: 11.5,
+                                  color: "var(--amber)",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                متبقي {fc(i.total_amount - i.paid_amount)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <React.Fragment>
