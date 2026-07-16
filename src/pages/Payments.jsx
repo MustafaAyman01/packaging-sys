@@ -7,6 +7,7 @@ export function Payments({ data, update, toast }) {
   const [mode, setMode] = useState("invoice"); // "invoice" | "account"
   const [editingPayment, setEditingPayment] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [invoiceSearch, setInvoiceSearch] = useState("");
   const [form, setForm] = useState({
     invoice_id: "",
     party_type: "client",
@@ -21,6 +22,12 @@ export function Payments({ data, update, toast }) {
     (i) =>
       i.type === "sale" && i.status !== "paid" && i.status !== "cancelled" && i.total_amount > i.paid_amount
   );
+  const filteredUnpaid = unpaid.filter((i) => {
+    if (!invoiceSearch) return true;
+    const q = invoiceSearch.toLowerCase();
+    const client = data.clients.find((c) => c.id === i.client_id);
+    return i.invoice_number.toLowerCase().includes(q) || (client?.name || "").toLowerCase().includes(q);
+  });
   const unpaidForParty = (partyType, partyId) => {
     const field = partyType === "client" ? "client_id" : "supplier_id";
     const invType = partyType === "client" ? "sale" : "purchase";
@@ -153,6 +160,7 @@ export function Payments({ data, update, toast }) {
       }
     }
     setShowModal(false);
+    setInvoiceSearch("");
     setForm({
       invoice_id: "",
       party_type: "client",
@@ -402,6 +410,14 @@ export function Payments({ data, update, toast }) {
               {mode === "invoice" ? (
                 <div className="form-group">
                   <label>الفاتورة *</label>
+                  <input
+                    value={invoiceSearch}
+                    onChange={(e) => setInvoiceSearch(e.target.value)}
+                    placeholder="بحث برقم الفاتورة أو اسم العميل..."
+                    style={{
+                      marginBottom: 8,
+                    }}
+                  />
                   <select
                     value={form.invoice_id}
                     onChange={(e) => {
@@ -414,12 +430,23 @@ export function Payments({ data, update, toast }) {
                     }}
                   >
                     <option value="">اختر فاتورة</option>
-                    {unpaid.map((i) => (
+                    {filteredUnpaid.map((i) => (
                       <option key={i.id} value={i.id}>
                         {i.invoice_number} — متبقي {fc(i.total_amount - i.paid_amount)}
                       </option>
                     ))}
                   </select>
+                  {invoiceSearch && filteredUnpaid.length === 0 && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text3)",
+                        marginTop: 6,
+                      }}
+                    >
+                      لا توجد فواتير مطابقة
+                    </div>
+                  )}
                 </div>
               ) : (
                 <React.Fragment>
