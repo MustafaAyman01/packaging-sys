@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "npm run build && wrangler pages deploy dist"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
@@ -16,9 +16,10 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.46.0",
     "@vitejs/plugin-react": "^6.0.3",
     "prettier": "^3.9.4",
     "vite": "^8.1.1",
-    "wrangler": "^4.106.0"
+    "wrangler": "^4.113.0"
   }
 }
