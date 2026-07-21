@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StatementModal } from "../components/StatementModal";
 import { generateId, fc, today } from "../utils/format";
 import { CLIENT_TYPE_LABELS } from "../constants/labels";
+import { findDuplicateGroups } from "../utils/duplicates";
 
 export function Clients({ data, update, toast, org }) {
   const [search, setSearch] = useState("");
@@ -9,11 +10,7 @@ export function Clients({ data, update, toast, org }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [statementParty, setStatementParty] = useState(null);
-  const [showMerge, setShowMerge] = useState(false);
-  const [mergeForm, setMergeForm] = useState({
-    primary_id: "",
-    duplicate_id: "",
-  });
+  const autoMergedRef = useRef(new Set());
   const filtered = data.clients.filter((c) => !search || c.name.includes(search) || c.phone.includes(search));
   const openNew = () => {
     setEditing(null);
@@ -41,7 +38,8 @@ export function Clients({ data, update, toast, org }) {
     const dup = data.clients.find(
       (c) => c.id !== editing?.id && c.is_active && c.name.trim().toLowerCase() === normalized
     );
-    if (dup && !confirm(`⚠️ فيه عميل موجود بنفس الاسم بالظبط ("${dup.name}"). متأكد إنه مش نفس العميل؟`)) {
+    if (dup) {
+      toast(`⚠️ فيه عميل مسجل بالفعل بنفس الاسم ("${dup.name}") — استخدم السجل الموجود بدل ما تضيف واحد جديد`);
       return;
     }
     if (editing)
@@ -87,34 +85,35 @@ export function Clients({ data, update, toast, org }) {
       .reduce((s, p) => s + p.amount, 0);
     return invBalance - unapplied;
   };
-  const mergeClients = () => {
-    const { primary_id, duplicate_id } = mergeForm;
-    if (!primary_id || !duplicate_id || primary_id === duplicate_id) {
-      toast("⚠️ اختار العميل الأساسي والمكرر (لازم يكونوا مختلفين)");
-      return;
-    }
+  // عدد الفواتير المرتبطة بالعميل — بنستخدمه كمعيار لاختيار "الأساسي" تلقائي
+  // (اللي عليه فواتير أكتر غالباً هو السجل الأصلي، مش المكرر بالغلط)
+  const invoiceCount = (id) => data.invoices.filter((i) => i.client_id === id).length;
+  const duplicateGroups = findDuplicateGroups(data.clients).map((ids) =>
+    ids.map((id) => data.clients.find((c) => c.id === id)).filter(Boolean)
+  );
+  // دمج مجموعة تكرار تلقائياً من غير تدخل — بيختار "الأساسي" هو اللي عليه فواتير
+  // أكتر (الأقدم في الاستخدام)، وينقل كل حاجة من الباقيين ليه ويوقفهم
+  const mergeGroup = (members) => {
+    const primary_id = [...members].sort(
+      (a, b) => invoiceCount(b.id) - invoiceCount(a.id) || (a.created_at || "").localeCompare(b.created_at || "")
+    )[0].id;
+    const duplicateIds = members.map((c) => c.id).filter((id) => id !== primary_id);
+    if (duplicateIds.length === 0) return;
     const primary = data.clients.find((c) => c.id === primary_id);
-    const duplicate = data.clients.find((c) => c.id === duplicate_id);
-    if (
-      !confirm(
-        `هيتم نقل كل فواتير ودفعات "${duplicate.name}" لـ "${primary.name}"، وإيقاف السجل المكرر نهائيًا. الإجراء ده مينفعش يتراجع فيه بسهولة. متأكد؟`
-      )
-    )
-      return;
     update(
       "invoices",
-      data.invoices.map((i) => (i.client_id === duplicate_id ? { ...i, client_id: primary_id } : i))
+      data.invoices.map((i) => (duplicateIds.includes(i.client_id) ? { ...i, client_id: primary_id } : i))
     );
     update(
       "payments",
       data.payments.map((p) =>
-        p.party_type === "client" && p.party_id === duplicate_id ? { ...p, party_id: primary_id } : p
+        p.party_type === "client" && duplicateIds.includes(p.party_id) ? { ...p, party_id: primary_id } : p
       )
     );
     update(
       "clients",
       data.clients.map((c) =>
-        c.id === duplicate_id
+        duplicateIds.includes(c.id)
           ? {
               ...c,
               is_active: false,
@@ -123,13 +122,28 @@ export function Clients({ data, update, toast, org }) {
           : c
       )
     );
-    setShowMerge(false);
-    setMergeForm({
-      primary_id: "",
-      duplicate_id: "",
-    });
-    toast("تم دمج العميلين ✓");
+    toast(`⚡ تم اكتشاف ودمج عميل مكرر تلقائيًا في "${primary.name}"`);
   };
+  const duplicateGroupsKey = duplicateGroups
+    .map((g) =>
+      g
+        .map((c) => c.id)
+        .sort()
+        .join("+")
+    )
+    .join("|");
+  useEffect(() => {
+    duplicateGroups.forEach((members) => {
+      const sig = members
+        .map((c) => c.id)
+        .sort()
+        .join(",");
+      if (autoMergedRef.current.has(sig)) return;
+      autoMergedRef.current.add(sig);
+      mergeGroup(members);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duplicateGroupsKey]);
   return (
     <div>
       <div
@@ -152,9 +166,6 @@ export function Clients({ data, update, toast, org }) {
             autoComplete="off"
           />
         </div>
-        <button className="btn btn-secondary" onClick={() => setShowMerge(true)}>
-          🔗 دمج عملاء مكررين
-        </button>
         <button className="btn btn-primary" onClick={openNew}>
           + عميل جديد
         </button>
@@ -361,77 +372,6 @@ export function Clients({ data, update, toast, org }) {
               </button>
               <button className="btn btn-primary" onClick={save}>
                 حفظ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showMerge && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">🔗 دمج عملاء مكررين</span>
-              <button className="close-btn" onClick={() => setShowMerge(false)}>
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div
-                className="alert alert-warning"
-                style={{
-                  marginBottom: 16,
-                }}
-              >
-                لو نفس العميل مسجل مرتين بالغلط (حسابين منفصلين)، اختار السجل اللي عايز تحتفظ بيه (الأساسي)
-                والسجل المكرر — هيتم نقل كل فواتير ودفعات المكرر للأساسي، وإيقاف السجل المكرر.
-              </div>
-              <div className="form-group">
-                <label>العميل الأساسي (اللي هيفضل شغال)</label>
-                <select
-                  value={mergeForm.primary_id}
-                  onChange={(e) =>
-                    setMergeForm({
-                      ...mergeForm,
-                      primary_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">اختر</option>
-                  {data.clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} — رصيده {fc(getBalance(c.id))}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>العميل المكرر (هيتم دمجه ووقفه)</label>
-                <select
-                  value={mergeForm.duplicate_id}
-                  onChange={(e) =>
-                    setMergeForm({
-                      ...mergeForm,
-                      duplicate_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">اختر</option>
-                  {data.clients
-                    .filter((c) => c.id !== mergeForm.primary_id)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} — رصيده {fc(getBalance(c.id))}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowMerge(false)}>
-                إلغاء
-              </button>
-              <button className="btn btn-primary" onClick={mergeClients}>
-                دمج الحسابين
               </button>
             </div>
           </div>

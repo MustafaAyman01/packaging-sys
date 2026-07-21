@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StatementModal } from "../components/StatementModal";
 import { generateId, fc, today } from "../utils/format";
+import { findDuplicateGroups } from "../utils/duplicates";
 
 export function Suppliers({ data, update, toast, org }) {
   const [search, setSearch] = useState("");
@@ -8,11 +9,7 @@ export function Suppliers({ data, update, toast, org }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [statementParty, setStatementParty] = useState(null);
-  const [showMerge, setShowMerge] = useState(false);
-  const [mergeForm, setMergeForm] = useState({
-    primary_id: "",
-    duplicate_id: "",
-  });
+  const autoMergedRef = useRef(new Set());
   const filtered = data.suppliers.filter((s) => !search || s.name.includes(search));
   const openNew = () => {
     setEditing(null);
@@ -39,7 +36,8 @@ export function Suppliers({ data, update, toast, org }) {
     const dup = data.suppliers.find(
       (s) => s.id !== editing?.id && s.is_active && s.name.trim().toLowerCase() === normalized
     );
-    if (dup && !confirm(`⚠️ فيه مورد موجود بنفس الاسم بالظبط ("${dup.name}"). متأكد إنه مش نفس المورد؟`)) {
+    if (dup) {
+      toast(`⚠️ فيه مورد مسجل بالفعل بنفس الاسم ("${dup.name}") — استخدم السجل الموجود بدل ما تضيف واحد جديد`);
       return;
     }
     if (editing)
@@ -85,34 +83,31 @@ export function Suppliers({ data, update, toast, org }) {
       .reduce((s, p) => s + p.amount, 0);
     return invBalance - unapplied;
   };
-  const mergeSuppliers = () => {
-    const { primary_id, duplicate_id } = mergeForm;
-    if (!primary_id || !duplicate_id || primary_id === duplicate_id) {
-      toast("⚠️ اختار المورد الأساسي والمكرر (لازم يكونوا مختلفين)");
-      return;
-    }
+  const invoiceCount = (id) => data.invoices.filter((i) => i.supplier_id === id).length;
+  const duplicateGroups = findDuplicateGroups(data.suppliers).map((ids) =>
+    ids.map((id) => data.suppliers.find((s) => s.id === id)).filter(Boolean)
+  );
+  const mergeGroup = (members) => {
+    const primary_id = [...members].sort(
+      (a, b) => invoiceCount(b.id) - invoiceCount(a.id) || (a.created_at || "").localeCompare(b.created_at || "")
+    )[0].id;
+    const duplicateIds = members.map((s) => s.id).filter((id) => id !== primary_id);
+    if (duplicateIds.length === 0) return;
     const primary = data.suppliers.find((s) => s.id === primary_id);
-    const duplicate = data.suppliers.find((s) => s.id === duplicate_id);
-    if (
-      !confirm(
-        `هيتم نقل كل فواتير ودفعات "${duplicate.name}" لـ "${primary.name}"، وإيقاف السجل المكرر نهائيًا. الإجراء ده مينفعش يتراجع فيه بسهولة. متأكد؟`
-      )
-    )
-      return;
     update(
       "invoices",
-      data.invoices.map((i) => (i.supplier_id === duplicate_id ? { ...i, supplier_id: primary_id } : i))
+      data.invoices.map((i) => (duplicateIds.includes(i.supplier_id) ? { ...i, supplier_id: primary_id } : i))
     );
     update(
       "payments",
       data.payments.map((p) =>
-        p.party_type === "supplier" && p.party_id === duplicate_id ? { ...p, party_id: primary_id } : p
+        p.party_type === "supplier" && duplicateIds.includes(p.party_id) ? { ...p, party_id: primary_id } : p
       )
     );
     update(
       "suppliers",
       data.suppliers.map((s) =>
-        s.id === duplicate_id
+        duplicateIds.includes(s.id)
           ? {
               ...s,
               is_active: false,
@@ -121,13 +116,28 @@ export function Suppliers({ data, update, toast, org }) {
           : s
       )
     );
-    setShowMerge(false);
-    setMergeForm({
-      primary_id: "",
-      duplicate_id: "",
-    });
-    toast("تم دمج الموردين ✓");
+    toast(`⚡ تم اكتشاف ودمج مورد مكرر تلقائيًا في "${primary.name}"`);
   };
+  const duplicateGroupsKey = duplicateGroups
+    .map((g) =>
+      g
+        .map((s) => s.id)
+        .sort()
+        .join("+")
+    )
+    .join("|");
+  useEffect(() => {
+    duplicateGroups.forEach((members) => {
+      const sig = members
+        .map((s) => s.id)
+        .sort()
+        .join(",");
+      if (autoMergedRef.current.has(sig)) return;
+      autoMergedRef.current.add(sig);
+      mergeGroup(members);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duplicateGroupsKey]);
   return (
     <div>
       <div
@@ -150,9 +160,6 @@ export function Suppliers({ data, update, toast, org }) {
             autoComplete="off"
           />
         </div>
-        <button className="btn btn-secondary" onClick={() => setShowMerge(true)}>
-          🔗 دمج موردين مكررين
-        </button>
         <button className="btn btn-primary" onClick={openNew}>
           + مورد جديد
         </button>
@@ -320,77 +327,6 @@ export function Suppliers({ data, update, toast, org }) {
               </button>
               <button className="btn btn-primary" onClick={save}>
                 حفظ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showMerge && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">🔗 دمج موردين مكررين</span>
-              <button className="close-btn" onClick={() => setShowMerge(false)}>
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div
-                className="alert alert-warning"
-                style={{
-                  marginBottom: 16,
-                }}
-              >
-                لو نفس المورد مسجل مرتين بالغلط (حسابين منفصلين)، اختار السجل اللي عايز تحتفظ بيه (الأساسي)
-                والسجل المكرر — هيتم نقل كل فواتير ودفعات المكرر للأساسي، وإيقاف السجل المكرر.
-              </div>
-              <div className="form-group">
-                <label>المورد الأساسي (اللي هيفضل شغال)</label>
-                <select
-                  value={mergeForm.primary_id}
-                  onChange={(e) =>
-                    setMergeForm({
-                      ...mergeForm,
-                      primary_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">اختر</option>
-                  {data.suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} — رصيده {fc(getBalance(s.id))}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>المورد المكرر (هيتم دمجه ووقفه)</label>
-                <select
-                  value={mergeForm.duplicate_id}
-                  onChange={(e) =>
-                    setMergeForm({
-                      ...mergeForm,
-                      duplicate_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">اختر</option>
-                  {data.suppliers
-                    .filter((s) => s.id !== mergeForm.primary_id)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} — رصيده {fc(getBalance(s.id))}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowMerge(false)}>
-                إلغاء
-              </button>
-              <button className="btn btn-primary" onClick={mergeSuppliers}>
-                دمج الحسابين
               </button>
             </div>
           </div>
