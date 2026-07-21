@@ -1,0 +1,36 @@
+name: Keep Supabase Alive
+
+# مشاريع Supabase المجانية بتتوقف تلقائي لو مفيش أي نشاط عليها لمدة أسبوع تقريباً.
+# الـ workflow ده بيبعت طلب بسيط جداً (قراءة صف واحد بس) على فترات متقاربة عشان
+# يفضل المشروع "نشط" ومايتقفلش، من غير ما نأثر على البيانات أو نعمل أي تعديل.
+
+on:
+  schedule:
+    # كل ٣ أيام الساعة ٣ صباحاً بتوقيت UTC — هامش أمان كبير قبل حد الأسبوع
+    - cron: "0 3 */3 * *"
+  workflow_dispatch: {} # يسمح بتشغيله يدوياً من تاب Actions لو حبيت تجربه فوراً
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (lightweight read)
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "⚠️ لازم تضيف SUPABASE_URL و SUPABASE_ANON_KEY في إعدادات الريبو (Secrets)."
+            exit 1
+          fi
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/clients?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "Supabase response status: $status"
+          if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+            echo "✅ Supabase project is alive."
+          else
+            echo "⚠️ Unexpected status code — راجع الـ secrets أو حالة المشروع على Supabase."
+            exit 1
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
