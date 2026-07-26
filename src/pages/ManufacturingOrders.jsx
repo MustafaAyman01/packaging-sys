@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
 import { generateId, fc, fd, today } from "../utils/format";
+import { t } from "../i18n";
 
 const emptyExpenseRow = () => ({
   id: generateId(),
@@ -18,7 +19,7 @@ const blankForm = () => ({
   notes: "",
 });
 
-export function ManufacturingOrders({ data, update, updateStock, toast }) {
+export function ManufacturingOrders({ data, update, updateStock, toast, lang }) {
   const orders = data.manufacturing_orders || [];
   const [showModal, setShowModal] = useState(false);
   const [viewOrder, setViewOrder] = useState(null);
@@ -161,14 +162,14 @@ export function ManufacturingOrders({ data, update, updateStock, toast }) {
         <table>
           <thead>
             <tr>
-              <th>رقم الأمر</th>
-              <th>التاريخ</th>
-              <th>الخامة المستخدمة</th>
-              <th>الكمية المستخدمة</th>
-              <th>المنتج الناتج</th>
-              <th>الكمية المنتجة</th>
-              <th>تكلفة القطعة</th>
-              <th>إجمالي التكلفة</th>
+              <th>{t("common", "order_number", lang)}</th>
+              <th>{t("common", "date", lang)}</th>
+              <th>{t("common", "material_used", lang)}</th>
+              <th>{t("common", "qty_used", lang)}</th>
+              <th>{t("common", "output_product", lang)}</th>
+              <th>{t("common", "qty_produced", lang)}</th>
+              <th>{t("common", "piece_cost", lang)}</th>
+              <th>{t("common", "total_cost", lang)}</th>
               <th />
             </tr>
           </thead>
@@ -340,8 +341,8 @@ export function ManufacturingOrders({ data, update, updateStock, toast }) {
               >
                 <thead>
                   <tr>
-                    <th>البند</th>
-                    <th>المبلغ (ج.م)</th>
+                    <th>{t("common", "item", lang)}</th>
+                    <th>{t("common", "amount_egp", lang)}</th>
                     <th />
                   </tr>
                 </thead>

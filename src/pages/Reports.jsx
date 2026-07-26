@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { printDebtsSheet } from "../features/print/printDebtsSheet";
 import { fc, fd } from "../utils/format";
 import { getPartyBalance, getUnappliedMap } from "../utils/balance";
+import { t } from "../i18n";
 
-export function Reports({ data, getStockQty, org }) {
+export function Reports({ data, getStockQty, org, lang }) {
   const [tab, setTab] = useState("kpi");
   const [period, setPeriod] = useState("month");
   const [customFrom, setCustomFrom] = useState("");
@@ -676,12 +677,12 @@ export function Reports({ data, getStockQty, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>المنتج</th>
-                  <th>الكمية المباعة</th>
-                  <th>الإيراد</th>
-                  <th>الربح</th>
-                  <th>المخزون الحالي</th>
+                  <th>{t("common", "row_no", lang)}</th>
+                  <th>{t("common", "product", lang)}</th>
+                  <th>{t("common", "qty_sold", lang)}</th>
+                  <th>{t("common", "revenue", lang)}</th>
+                  <th>{t("common", "profit", lang)}</th>
+                  <th>{t("common", "current_stock", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -759,12 +760,12 @@ export function Reports({ data, getStockQty, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>العميل</th>
-                  <th>عدد الفواتير</th>
-                  <th>إجمالي المشتريات</th>
-                  <th>المسدد</th>
-                  <th>المتبقي</th>
+                  <th>{t("common", "row_no", lang)}</th>
+                  <th>{t("common", "client", lang)}</th>
+                  <th>{t("common", "invoice_count", lang)}</th>
+                  <th>{t("common", "total_purchases", lang)}</th>
+                  <th>{t("common", "settled", lang)}</th>
+                  <th>{t("common", "remaining", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -874,10 +875,10 @@ export function Reports({ data, getStockQty, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>البيان</th>
-                  <th>الفئة</th>
-                  <th>المبلغ</th>
+                  <th>{t("common", "date", lang)}</th>
+                  <th>{t("common", "description", lang)}</th>
+                  <th>{t("common", "category", lang)}</th>
+                  <th>{t("common", "amount", lang)}</th>
                 </tr>
               </thead>
               <tbody>

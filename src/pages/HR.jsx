@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { printPayrollSheet } from "../features/print/printPayroll";
 import { generateId, fc, fd, today } from "../utils/format";
 import { ATTENDANCE_LABELS } from "../constants/labels";
+import { t } from "../i18n";
 
-export function HR({ data, update, toast, org }) {
+export function HR({ data, update, toast, org, lang }) {
   const [tab, setTab] = useState("employees");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -513,13 +514,13 @@ export function HR({ data, update, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>الاسم</th>
-                  <th>الوظيفة</th>
-                  <th>القسم</th>
-                  <th>الهاتف</th>
-                  <th>تاريخ التعيين</th>
-                  <th>الراتب</th>
-                  <th>الحالة</th>
+                  <th>{t("common", "name", lang)}</th>
+                  <th>{t("common", "job_title", lang)}</th>
+                  <th>{t("common", "section", lang)}</th>
+                  <th>{t("common", "phone", lang)}</th>
+                  <th>{t("common", "hire_date", lang)}</th>
+                  <th>{t("common", "salary", lang)}</th>
+                  <th>{t("common", "status", lang)}</th>
                   <th />
                 </tr>
               </thead>
@@ -931,11 +932,11 @@ export function HR({ data, update, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>الموظف</th>
-                  <th>الشهر</th>
-                  <th>المبلغ</th>
-                  <th>ملاحظات</th>
+                  <th>{t("common", "date", lang)}</th>
+                  <th>{t("common", "employee", lang)}</th>
+                  <th>{t("common", "month", lang)}</th>
+                  <th>{t("common", "amount", lang)}</th>
+                  <th>{t("common", "notes", lang)}</th>
                   <th />
                 </tr>
               </thead>
@@ -1017,12 +1018,12 @@ export function HR({ data, update, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>الموظف</th>
-                  <th>القسم</th>
-                  <th>الحالة</th>
-                  <th>تسجيل سريع</th>
-                  <th>الخصم</th>
-                  <th>ساعات أوفر تايم</th>
+                  <th>{t("common", "employee", lang)}</th>
+                  <th>{t("common", "section", lang)}</th>
+                  <th>{t("common", "status", lang)}</th>
+                  <th>{t("common", "quick_entry", lang)}</th>
+                  <th>{t("common", "discount", lang)}</th>
+                  <th>{t("common", "overtime_hours", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1245,11 +1246,11 @@ export function HR({ data, update, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>الموظف</th>
-                  <th>المبلغ</th>
-                  <th>المتبقي</th>
-                  <th>السبب</th>
+                  <th>{t("common", "date", lang)}</th>
+                  <th>{t("common", "employee", lang)}</th>
+                  <th>{t("common", "amount", lang)}</th>
+                  <th>{t("common", "remaining", lang)}</th>
+                  <th>{t("common", "reason", lang)}</th>
                   <th />
                 </tr>
               </thead>
@@ -1417,11 +1418,11 @@ export function HR({ data, update, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>الموظف</th>
-                  <th>المبلغ</th>
-                  <th>السبب</th>
-                  <th>ملاحظات</th>
+                  <th>{t("common", "date", lang)}</th>
+                  <th>{t("common", "employee", lang)}</th>
+                  <th>{t("common", "amount", lang)}</th>
+                  <th>{t("common", "reason", lang)}</th>
+                  <th>{t("common", "notes", lang)}</th>
                   <th />
                 </tr>
               </thead>

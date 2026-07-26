@@ -450,30 +450,42 @@ export function App({ features, session, profile, trialEndsAt }) {
     if (navItems.length && !navItems.find((n) => n.id === page)) setPage("dashboard");
   }, [features, myRole]);
   const pages = {
-    dashboard: <Dashboard data={data} setPage={setPage} getStockQty={getStockQty} />,
-    products: <Products data={data} update={update} updateStock={updateStock} getStockQty={getStockQty} toast={toast} />,
-    stock: (
-      <Stock data={data} update={update} getStockQty={getStockQty} updateStock={updateStock} toast={toast} org={org} />
+    dashboard: <Dashboard data={data} setPage={setPage} getStockQty={getStockQty} lang={lang} />,
+    products: (
+      <Products data={data} update={update} updateStock={updateStock} getStockQty={getStockQty} toast={toast} lang={lang} />
     ),
-    manufacturing_orders: <ManufacturingOrders data={data} update={update} updateStock={updateStock} toast={toast} />,
-    invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} />,
-    clients: <Clients data={data} update={update} toast={toast} org={org} />,
-    suppliers: <Suppliers data={data} update={update} toast={toast} org={org} />,
-    payments: <Payments data={data} update={update} toast={toast} />,
-    cash_vouchers: <CashVouchers data={data} update={update} toast={toast} />,
-    expenses: <Expenses data={data} update={update} toast={toast} />,
-    hr: <HR data={data} update={update} toast={toast} org={org} />,
-    csv_import: <CsvImport data={data} update={update} toast={toast} />,
-    reports: <Reports data={data} getStockQty={getStockQty} org={org} />,
+    stock: (
+      <Stock
+        data={data}
+        update={update}
+        getStockQty={getStockQty}
+        updateStock={updateStock}
+        toast={toast}
+        org={org}
+        lang={lang}
+      />
+    ),
+    manufacturing_orders: (
+      <ManufacturingOrders data={data} update={update} updateStock={updateStock} toast={toast} lang={lang} />
+    ),
+    invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} lang={lang} />,
+    clients: <Clients data={data} update={update} toast={toast} org={org} lang={lang} />,
+    suppliers: <Suppliers data={data} update={update} toast={toast} org={org} lang={lang} />,
+    payments: <Payments data={data} update={update} toast={toast} lang={lang} />,
+    cash_vouchers: <CashVouchers data={data} update={update} toast={toast} lang={lang} />,
+    expenses: <Expenses data={data} update={update} toast={toast} lang={lang} />,
+    hr: <HR data={data} update={update} toast={toast} org={org} lang={lang} />,
+    csv_import: <CsvImport data={data} update={update} toast={toast} lang={lang} />,
+    reports: <Reports data={data} getStockQty={getStockQty} org={org} lang={lang} />,
     settings: SUPABASE_ENABLED ? (
-      <Settings profile={profile} toast={toast} />
+      <Settings profile={profile} toast={toast} lang={lang} />
     ) : (
       <div className="card">
         <div className="card-body">الإعدادات متاحة فقط عند تفعيل Supabase.</div>
       </div>
     ),
     activity_log: SUPABASE_ENABLED ? (
-      <ActivityLog profile={profile} toast={toast} />
+      <ActivityLog profile={profile} toast={toast} lang={lang} />
     ) : (
       <div className="card">
         <div className="card-body">سجل الأنشطة متاح فقط عند تفعيل Supabase.</div>

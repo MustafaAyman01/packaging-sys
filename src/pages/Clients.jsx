@@ -4,8 +4,9 @@ import { generateId, fc, today } from "../utils/format";
 import { CLIENT_TYPE_LABELS } from "../constants/labels";
 import { findDuplicateGroups } from "../utils/duplicates";
 import { getPartyBalance } from "../utils/balance";
+import { t } from "../i18n";
 
-export function Clients({ data, update, toast, org }) {
+export function Clients({ data, update, toast, org, lang }) {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -166,12 +167,12 @@ export function Clients({ data, update, toast, org }) {
         <table>
           <thead>
             <tr>
-              <th>الاسم</th>
-              <th>النوع</th>
-              <th>التليفون</th>
-              <th>الرقم الضريبي</th>
-              <th>رصيد مستحق</th>
-              <th>الحالة</th>
+              <th>{t("common", "name", lang)}</th>
+              <th>{t("common", "type", lang)}</th>
+              <th>{t("common", "phone", lang)}</th>
+              <th>{t("common", "tax_number", lang)}</th>
+              <th>{t("common", "balance_due", lang)}</th>
+              <th>{t("common", "status", lang)}</th>
               <th />
             </tr>
           </thead>

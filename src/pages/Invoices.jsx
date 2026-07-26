@@ -5,8 +5,9 @@ import { printInvoice } from "../features/print/printInvoice";
 import { generateId, fc, fd, today } from "../utils/format";
 import { STATUS_LABELS, TYPE_LABELS, PAYMENT_METHODS } from "../constants/labels";
 import { fetchNextInvoiceNumber } from "../services/sync";
+import { t } from "../i18n";
 
-export function Invoices({ data, update, updateStock, toast, org }) {
+export function Invoices({ data, update, updateStock, toast, org, lang }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -433,15 +434,15 @@ export function Invoices({ data, update, updateStock, toast, org }) {
         <table>
           <thead>
             <tr>
-              <th>رقم الفاتورة</th>
-              <th>النوع</th>
-              <th>العميل/المورد</th>
-              <th>التاريخ</th>
-              <th>الاستحقاق</th>
-              <th>الإجمالي</th>
-              <th>المدفوع</th>
-              <th>المتبقي</th>
-              <th>الحالة</th>
+              <th>{t("common", "invoice_number", lang)}</th>
+              <th>{t("common", "type", lang)}</th>
+              <th>{t("common", "client_supplier", lang)}</th>
+              <th>{t("common", "date", lang)}</th>
+              <th>{t("common", "due", lang)}</th>
+              <th>{t("common", "total", lang)}</th>
+              <th>{t("common", "paid", lang)}</th>
+              <th>{t("common", "remaining", lang)}</th>
+              <th>{t("common", "status", lang)}</th>
               <th />
             </tr>
           </thead>
@@ -672,11 +673,11 @@ export function Invoices({ data, update, updateStock, toast, org }) {
               >
                 <thead>
                   <tr>
-                    <th>المنتج</th>
-                    <th>الكمية</th>
-                    <th>السعر</th>
-                    <th>خصم%</th>
-                    <th>الإجمالي</th>
+                    <th>{t("common", "product", lang)}</th>
+                    <th>{t("common", "quantity", lang)}</th>
+                    <th>{t("common", "price", lang)}</th>
+                    <th>{t("common", "discount_pct", lang)}</th>
+                    <th>{t("common", "total", lang)}</th>
                     <th />
                   </tr>
                 </thead>
@@ -1038,11 +1039,11 @@ export function Invoices({ data, update, updateStock, toast, org }) {
               <table className="inv-table">
                 <thead>
                   <tr>
-                    <th>المنتج</th>
-                    <th>الكمية</th>
-                    <th>السعر</th>
-                    <th>خصم%</th>
-                    <th>الإجمالي</th>
+                    <th>{t("common", "product", lang)}</th>
+                    <th>{t("common", "quantity", lang)}</th>
+                    <th>{t("common", "price", lang)}</th>
+                    <th>{t("common", "discount_pct", lang)}</th>
+                    <th>{t("common", "total", lang)}</th>
                   </tr>
                 </thead>
                 <tbody>

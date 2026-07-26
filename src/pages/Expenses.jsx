@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { generateId, fc, fd, today } from "../utils/format";
+import { t } from "../i18n";
 
-export function Expenses({ data, update, toast }) {
+export function Expenses({ data, update, toast, lang }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
@@ -112,10 +113,10 @@ export function Expenses({ data, update, toast }) {
         <table>
           <thead>
             <tr>
-              <th>التاريخ</th>
-              <th>البيان</th>
-              <th>الفئة</th>
-              <th>المبلغ</th>
+              <th>{t("common", "date", lang)}</th>
+              <th>{t("common", "description", lang)}</th>
+              <th>{t("common", "category", lang)}</th>
+              <th>{t("common", "amount", lang)}</th>
               <th />
             </tr>
           </thead>

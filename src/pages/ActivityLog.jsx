@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { sb } from "../services/supabaseClient";
 import { ACTIVITY_TABLE_LABELS, ACTIVITY_ACTION_LABELS } from "../constants/labels";
+import { t } from "../i18n";
 
-export function ActivityLog({ profile, toast }) {
+export function ActivityLog({ profile, toast, lang }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterTable, setFilterTable] = useState("");
@@ -119,11 +120,11 @@ export function ActivityLog({ profile, toast }) {
           <table>
             <thead>
               <tr>
-                <th>التاريخ والوقت</th>
-                <th>المستخدم</th>
-                <th>العملية</th>
-                <th>القسم</th>
-                <th>التفاصيل</th>
+                <th>{t("common", "date_time", lang)}</th>
+                <th>{t("common", "user", lang)}</th>
+                <th>{t("common", "operation", lang)}</th>
+                <th>{t("common", "section", lang)}</th>
+                <th>{t("common", "details", lang)}</th>
               </tr>
             </thead>
             <tbody>

@@ -3,8 +3,9 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ProductPicker } from "../components/ProductPicker";
 import { fc, fd, today } from "../utils/format";
 import { TYPE_LABELS } from "../constants/labels";
+import { t } from "../i18n";
 
-export function Dashboard({ data, setPage, getStockQty }) {
+export function Dashboard({ data, setPage, getStockQty, lang }) {
   const [lookupId, setLookupId] = useState("");
 
   const salesInvs = data.invoices.filter((i) => i.type === "sale" && i.status !== "cancelled");
@@ -536,11 +537,11 @@ export function Dashboard({ data, setPage, getStockQty }) {
           <table>
             <thead>
               <tr>
-                <th>رقم الفاتورة</th>
-                <th>النوع</th>
-                <th>التاريخ</th>
-                <th>الإجمالي</th>
-                <th>الحالة</th>
+                <th>{t("common", "invoice_number", lang)}</th>
+                <th>{t("common", "type", lang)}</th>
+                <th>{t("common", "date", lang)}</th>
+                <th>{t("common", "total", lang)}</th>
+                <th>{t("common", "status", lang)}</th>
               </tr>
             </thead>
             <tbody>

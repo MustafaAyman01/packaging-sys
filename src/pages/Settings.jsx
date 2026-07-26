@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { sb, SUPABASE_URL, SUPABASE_ANON_KEY } from "../services/supabaseClient";
 import { ROLE_LABELS } from "../constants/labels";
+import { t } from "../i18n";
 
-export function Settings({ profile, toast }) {
+export function Settings({ profile, toast, lang }) {
   const [tab, setTab] = useState("org");
   const [org, setOrg] = useState(null);
   const [members, setMembers] = useState([]);
@@ -327,10 +328,10 @@ export function Settings({ profile, toast }) {
             <table>
               <thead>
                 <tr>
-                  <th>الاسم</th>
-                  <th>البريد الإلكتروني</th>
-                  <th>الدور</th>
-                  <th>الحالة</th>
+                  <th>{t("common", "name", lang)}</th>
+                  <th>{t("common", "email", lang)}</th>
+                  <th>{t("common", "role", lang)}</th>
+                  <th>{t("common", "status", lang)}</th>
                   <th />
                 </tr>
               </thead>

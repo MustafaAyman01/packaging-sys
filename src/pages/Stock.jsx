@@ -3,8 +3,9 @@ import { ProductPicker } from "../components/ProductPicker";
 import { generateId, fc, fd, today } from "../utils/format";
 import { printStocktakeSheet } from "../features/print/printStocktakeSheet";
 import { printStockMovements } from "../features/print/printStockMovements";
+import { t } from "../i18n";
 
-export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
+export function Stock({ data, update, getStockQty, updateStock, toast, org, lang }) {
   const [showModal, setShowModal] = useState(false);
   const [tab, setTab] = useState("movements");
   const [counts, setCounts] = useState({});
@@ -156,11 +157,11 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
           <table>
             <thead>
               <tr>
-                <th>المنتج</th>
-                <th>الكود</th>
-                <th>الكمية الحالية</th>
-                <th>الحد الأدنى</th>
-                <th>الحالة</th>
+                <th>{t("common", "product", lang)}</th>
+                <th>{t("common", "code", lang)}</th>
+                <th>{t("common", "current_qty", lang)}</th>
+                <th>{t("common", "min_threshold", lang)}</th>
+                <th>{t("common", "status", lang)}</th>
               </tr>
             </thead>
             <tbody>
@@ -277,12 +278,12 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>المنتج</th>
-                  <th>الكود</th>
-                  <th>الرصيد الدفتري</th>
-                  <th>الجرد الفعلي</th>
-                  <th>الفرق</th>
-                  <th>قيمة الفرق</th>
+                  <th>{t("common", "product", lang)}</th>
+                  <th>{t("common", "code", lang)}</th>
+                  <th>{t("common", "book_balance", lang)}</th>
+                  <th>{t("common", "actual_count", lang)}</th>
+                  <th>{t("common", "difference", lang)}</th>
+                  <th>{t("common", "difference_value", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -417,13 +418,13 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org }) {
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>المنتج</th>
-                  <th>النوع</th>
-                  <th>الكمية</th>
-                  <th>تكلفة الوحدة</th>
-                  <th>الإجمالي</th>
-                  <th>ملاحظات</th>
+                  <th>{t("common", "date", lang)}</th>
+                  <th>{t("common", "product", lang)}</th>
+                  <th>{t("common", "type", lang)}</th>
+                  <th>{t("common", "quantity", lang)}</th>
+                  <th>{t("common", "unit_cost", lang)}</th>
+                  <th>{t("common", "total", lang)}</th>
+                  <th>{t("common", "notes", lang)}</th>
                 </tr>
               </thead>
               <tbody>

@@ -2,8 +2,9 @@ import { useState } from "react";
 import { generateId, today } from "../utils/format";
 import { fc } from "../utils/format";
 import { CategoryUnitManager } from "../components/CategoryUnitManager";
+import { t } from "../i18n";
 
-export function Products({ data, update, updateStock, getStockQty, toast }) {
+export function Products({ data, update, updateStock, getStockQty, toast, lang }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -181,14 +182,14 @@ export function Products({ data, update, updateStock, getStockQty, toast }) {
         <table>
           <thead>
             <tr>
-              <th>الكود</th>
-              <th>الاسم</th>
-              <th>الفئة</th>
-              <th>الوحدة</th>
-              <th>سعر التكلفة</th>
-              <th>سعر البيع</th>
-              <th>المخزون</th>
-              <th>الحالة</th>
+              <th>{t("common", "code", lang)}</th>
+              <th>{t("common", "name", lang)}</th>
+              <th>{t("common", "category", lang)}</th>
+              <th>{t("common", "unit", lang)}</th>
+              <th>{t("common", "cost_price", lang)}</th>
+              <th>{t("common", "sale_price", lang)}</th>
+              <th>{t("common", "stock", lang)}</th>
+              <th>{t("common", "status", lang)}</th>
               <th />
             </tr>
           </thead>

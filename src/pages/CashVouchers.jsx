@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { generateId, fc, fd, today } from "../utils/format";
 import { VOUCHER_TYPE_LABELS, PAYMENT_METHODS } from "../constants/labels";
+import { t } from "../i18n";
 
-export function CashVouchers({ data, update, toast }) {
+export function CashVouchers({ data, update, toast, lang }) {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({});
   const openNew = (type) => {
@@ -111,12 +112,12 @@ export function CashVouchers({ data, update, toast }) {
         <table>
           <thead>
             <tr>
-              <th>التاريخ</th>
-              <th>النوع</th>
-              <th>البيان / الجهة</th>
-              <th>طريقة الدفع</th>
-              <th>المبلغ</th>
-              <th>ملاحظات</th>
+              <th>{t("common", "date", lang)}</th>
+              <th>{t("common", "type", lang)}</th>
+              <th>{t("common", "description_party", lang)}</th>
+              <th>{t("common", "payment_method", lang)}</th>
+              <th>{t("common", "amount", lang)}</th>
+              <th>{t("common", "notes", lang)}</th>
               <th />
             </tr>
           </thead>

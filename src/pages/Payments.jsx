@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { generateId, fc, fd, today } from "../utils/format";
 import { PAYMENT_METHODS } from "../constants/labels";
 import { getPartyBalance } from "../utils/balance";
+import { t } from "../i18n";
 
-export function Payments({ data, update, toast }) {
+export function Payments({ data, update, toast, lang }) {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("invoice"); // "invoice" | "account"
   const [editingPayment, setEditingPayment] = useState(null);
@@ -322,13 +323,13 @@ export function Payments({ data, update, toast }) {
         <table>
           <thead>
             <tr>
-              <th>التاريخ</th>
-              <th>الطرف</th>
-              <th>الفاتورة</th>
-              <th>المبلغ</th>
-              <th>طريقة الدفع</th>
-              <th>رقم المرجع</th>
-              <th>ملاحظات</th>
+              <th>{t("common", "date", lang)}</th>
+              <th>{t("common", "party", lang)}</th>
+              <th>{t("common", "invoice", lang)}</th>
+              <th>{t("common", "amount", lang)}</th>
+              <th>{t("common", "payment_method", lang)}</th>
+              <th>{t("common", "reference_number", lang)}</th>
+              <th>{t("common", "notes", lang)}</th>
               <th />
             </tr>
           </thead>
