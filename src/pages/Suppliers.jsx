@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { StatementModal } from "../components/StatementModal";
 import { generateId, fc, today } from "../utils/format";
 import { findDuplicateGroups } from "../utils/duplicates";
+import { getPartyBalance } from "../utils/balance";
 
 export function Suppliers({ data, update, toast, org }) {
   const [search, setSearch] = useState("");
@@ -73,16 +74,7 @@ export function Suppliers({ data, update, toast, org }) {
       toast("تم الحذف");
     }
   };
-  const getBalance = (id) => {
-    const invBalance = data.invoices
-      .filter((i) => i.supplier_id === id && i.type === "purchase" && i.status !== "cancelled")
-      .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0);
-    // دفعات "على الحساب" غير مربوطة بفاتورة معينة (مقدم/فرق مستحق للمورد) بتقلل من رصيده
-    const unapplied = data.payments
-      .filter((p) => !p.invoice_id && p.party_type === "supplier" && p.party_id === id)
-      .reduce((s, p) => s + p.amount, 0);
-    return invBalance - unapplied;
-  };
+  const getBalance = (id) => getPartyBalance(data, "supplier", id);
   const invoiceCount = (id) => data.invoices.filter((i) => i.supplier_id === id).length;
   const duplicateGroups = findDuplicateGroups(data.suppliers).map((ids) =>
     ids.map((id) => data.suppliers.find((s) => s.id === id)).filter(Boolean)

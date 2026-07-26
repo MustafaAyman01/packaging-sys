@@ -3,6 +3,7 @@ import { StatementModal } from "../components/StatementModal";
 import { generateId, fc, today } from "../utils/format";
 import { CLIENT_TYPE_LABELS } from "../constants/labels";
 import { findDuplicateGroups } from "../utils/duplicates";
+import { getPartyBalance } from "../utils/balance";
 
 export function Clients({ data, update, toast, org }) {
   const [search, setSearch] = useState("");
@@ -75,16 +76,7 @@ export function Clients({ data, update, toast, org }) {
       toast("تم الحذف");
     }
   };
-  const getBalance = (id) => {
-    const invBalance = data.invoices
-      .filter((i) => i.client_id === id && i.type === "sale" && i.status !== "cancelled")
-      .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0);
-    // دفعات "على الحساب" غير مربوطة بفاتورة معينة (مقدم/فرق مستحق للعميل) بتقلل من رصيده
-    const unapplied = data.payments
-      .filter((p) => !p.invoice_id && p.party_type === "client" && p.party_id === id)
-      .reduce((s, p) => s + p.amount, 0);
-    return invBalance - unapplied;
-  };
+  const getBalance = (id) => getPartyBalance(data, "client", id);
   // عدد الفواتير المرتبطة بالعميل — بنستخدمه كمعيار لاختيار "الأساسي" تلقائي
   // (اللي عليه فواتير أكتر غالباً هو السجل الأصلي، مش المكرر بالغلط)
   const invoiceCount = (id) => data.invoices.filter((i) => i.client_id === id).length;

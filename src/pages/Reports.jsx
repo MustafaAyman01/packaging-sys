@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { printDebtsSheet } from "../features/print/printDebtsSheet";
 import { fc, fd } from "../utils/format";
+import { getPartyBalance, getUnappliedMap } from "../utils/balance";
 
 export function Reports({ data, getStockQty, org }) {
   const [tab, setTab] = useState("kpi");
@@ -136,14 +137,8 @@ export function Reports({ data, getStockQty, org }) {
   const allTimeSales = data.invoices.filter((i) => i.type === "sale" && i.status !== "cancelled");
   const allTimePurch = data.invoices.filter((i) => i.type === "purchase" && i.status !== "cancelled");
   // دفعات "على الحساب" غير مربوطة بفاتورة معينة (فرق/مقدم مستحق للعميل أو المورد) — لازم تتخصم من رصيده
-  const unappliedByClient = {};
-  const unappliedBySupplier = {};
-  data.payments.forEach((p) => {
-    if (p.invoice_id) return;
-    if (p.party_type === "client") unappliedByClient[p.party_id] = (unappliedByClient[p.party_id] || 0) + p.amount;
-    else if (p.party_type === "supplier")
-      unappliedBySupplier[p.party_id] = (unappliedBySupplier[p.party_id] || 0) + p.amount;
-  });
+  const unappliedByClient = getUnappliedMap(data, "client");
+  const unappliedBySupplier = getUnappliedMap(data, "supplier");
   const totalUnappliedClient = Object.values(unappliedByClient).reduce((s, v) => s + v, 0);
   const totalUnappliedSupplier = Object.values(unappliedBySupplier).reduce((s, v) => s + v, 0);
   const totalReceivablesAllTime =
@@ -152,46 +147,22 @@ export function Reports({ data, getStockQty, org }) {
     allTimePurch.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) - totalUnappliedSupplier;
   // كشف مديونيات: مديونية كل عميل/مورد على حدة (لكل الأوقات)، للطباعة
   const clientDebtsList = data.clients
-    .map((c) => ({
-      ...c,
-      balance:
-        allTimeSales
-          .filter((i) => i.client_id === c.id)
-          .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) - (unappliedByClient[c.id] || 0),
-    }))
+    .map((c) => ({ ...c, balance: getPartyBalance(data, "client", c.id) }))
     .filter((c) => c.balance > 0.01)
     .sort((a, b) => b.balance - a.balance);
   const supplierDebtsList = data.suppliers
-    .map((s) => ({
-      ...s,
-      balance:
-        allTimePurch
-          .filter((i) => i.supplier_id === s.id)
-          .reduce((sum, i) => sum + (i.total_amount - i.paid_amount), 0) - (unappliedBySupplier[s.id] || 0),
-    }))
+    .map((s) => ({ ...s, balance: getPartyBalance(data, "supplier", s.id) }))
     .filter((s) => s.balance > 0.01)
     .sort((a, b) => b.balance - a.balance);
   // كشف أرصدة دائنة: عملاء دفعوا زيادة عن المستحق عليهم (رصيد ليهم عندنا)،
   // وموردين دفعنالهم زيادة عن المستحق عليهم (رصيد لينا عندهم)
   const clientCreditsList = data.clients
-    .map((c) => ({
-      ...c,
-      balance:
-        allTimeSales
-          .filter((i) => i.client_id === c.id)
-          .reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) - (unappliedByClient[c.id] || 0),
-    }))
+    .map((c) => ({ ...c, balance: getPartyBalance(data, "client", c.id) }))
     .filter((c) => c.balance < -0.01)
     .map((c) => ({ ...c, balance: -c.balance }))
     .sort((a, b) => b.balance - a.balance);
   const supplierCreditsList = data.suppliers
-    .map((s) => ({
-      ...s,
-      balance:
-        allTimePurch
-          .filter((i) => i.supplier_id === s.id)
-          .reduce((sum, i) => sum + (i.total_amount - i.paid_amount), 0) - (unappliedBySupplier[s.id] || 0),
-    }))
+    .map((s) => ({ ...s, balance: getPartyBalance(data, "supplier", s.id) }))
     .filter((s) => s.balance < -0.01)
     .map((s) => ({ ...s, balance: -s.balance }))
     .sort((a, b) => b.balance - a.balance);
@@ -236,14 +207,11 @@ export function Reports({ data, getStockQty, org }) {
   const clientSales = data.clients
     .map((c) => {
       const invs = salesCur.filter((i) => i.client_id === c.id);
-      const allTimeInvs = allTimeSales.filter((i) => i.client_id === c.id);
       return {
         ...c,
         total: sum(invs, "total_amount"),
         count: invs.length,
-        balance:
-          allTimeInvs.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0) -
-          (unappliedByClient[c.id] || 0),
+        balance: getPartyBalance(data, "client", c.id),
       };
     })
     .filter((c) => c.total > 0)
