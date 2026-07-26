@@ -21,6 +21,7 @@ import { EMPTY_DATA_TEMPLATE } from "../constants/emptyDataTemplate";
 import { INITIAL_DATA } from "../constants/initialData";
 import { fetchCloudData, pushInitialData, syncTableChange, SYNC_TABLES } from "../services/sync";
 import { generateId, today } from "../utils/format";
+import { t, LANG_STORAGE_KEY } from "../i18n";
 
 export function App({ features, session, profile, trialEndsAt }) {
   const [data, setData] = useState(SUPABASE_ENABLED ? EMPTY_DATA_TEMPLATE : loadData);
@@ -47,6 +48,12 @@ export function App({ features, session, profile, trialEndsAt }) {
   }, [theme]);
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const [org, setOrg] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem(LANG_STORAGE_KEY) || "ar");
+  const toggleLang = () => {
+    const next = lang === "ar" ? "en" : "ar";
+    setLang(next);
+    localStorage.setItem(LANG_STORAGE_KEY, next);
+  };
   const [cloudReady, setCloudReady] = useState(!SUPABASE_ENABLED);
   const [cloudError, setCloudError] = useState(null);
   useEffect(() => {
@@ -325,121 +332,106 @@ export function App({ features, session, profile, trialEndsAt }) {
   const navItemsAll = [
     {
       id: "dashboard",
-      label: "لوحة التحكم",
       icon: "📊",
-      group: "رئيسي",
+      group: "main",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales", "warehouse", "staff"],
     },
     {
       id: "invoices",
-      label: "الفواتير",
       icon: "📄",
-      group: "المبيعات",
+      group: "sales",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales"],
     },
     {
       id: "clients",
-      label: "العملاء",
       icon: "👥",
-      group: "المبيعات",
+      group: "sales",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales"],
     },
     {
       id: "products",
-      label: "المنتجات",
       icon: "👕",
-      group: "المخزون",
+      group: "inventory",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales", "warehouse"],
     },
     {
       id: "stock",
-      label: "حركة المخزون",
       icon: "🔄",
-      group: "المخزون",
+      group: "inventory",
       feature: "core",
       roles: ["owner", "admin", "warehouse"],
     },
     {
       id: "manufacturing_orders",
-      label: "أوامر التصنيع",
       icon: "🏗️",
-      group: "المخزون",
+      group: "inventory",
       feature: "core",
       roles: ["owner", "admin", "warehouse"],
     },
     {
       id: "suppliers",
-      label: "الموردون",
       icon: "🏭",
-      group: "المشتريات",
+      group: "purchasing",
       feature: "core",
       roles: ["owner", "admin", "accountant", "warehouse"],
     },
     {
       id: "payments",
-      label: "المدفوعات",
       icon: "💰",
-      group: "الحسابات",
+      group: "accounts",
       feature: "core",
       roles: ["owner", "admin", "accountant"],
     },
     {
       id: "cash_vouchers",
-      label: "سندات القبض والصرف",
       icon: "🧾",
-      group: "الحسابات",
+      group: "accounts",
       feature: "cash_vouchers",
       roles: ["owner", "admin", "accountant"],
     },
     {
       id: "expenses",
-      label: "المصروفات",
       icon: "💸",
-      group: "الحسابات",
+      group: "accounts",
       feature: "core",
       roles: ["owner", "admin", "accountant"],
     },
     {
       id: "hr",
-      label: "الموارد البشرية",
       icon: "🪪",
-      group: "الموارد البشرية",
+      group: "hr",
       feature: "hr",
       roles: ["owner", "admin", "accountant"],
     },
     {
       id: "csv_import",
-      label: "استيراد CSV",
       icon: "📥",
-      group: "البيانات",
+      group: "data",
       feature: "csv_import",
       roles: ["owner", "admin"],
     },
     {
       id: "reports",
-      label: "التقارير",
       icon: "📈",
-      group: "التقارير",
+      group: "reports",
       feature: "reports_advanced",
       roles: ["owner", "admin", "accountant"],
     },
     {
       id: "activity_log",
-      label: "سجل الأنشطة",
       icon: "📋",
-      group: "الإعدادات",
+      group: "settings",
       feature: "core",
       roles: ["owner", "admin"],
     },
     {
       id: "settings",
-      label: "الإعدادات",
       icon: "⚙️",
-      group: "الإعدادات",
+      group: "settings",
       feature: "core",
       roles: ["owner", "admin", "accountant", "sales", "warehouse", "staff"],
     },
@@ -447,7 +439,7 @@ export function App({ features, session, profile, trialEndsAt }) {
   const myRole = profile?.role || "owner"; // when Supabase disabled, profile is null -> full access
   const navItems = navItemsAll.filter((n) => features[n.feature] !== false && n.roles.includes(myRole));
   const groups = [...new Set(navItems.map((n) => n.group))];
-  const pageTitles = Object.fromEntries(navItems.map((n) => [n.id, n.label]));
+  const pageTitles = Object.fromEntries(navItems.map((n) => [n.id, t("nav", n.id, lang)]));
   const lowStockCount = data.products.filter(
     (p) => getStockQty(p.id) < p.min_stock_level && p.is_active
   ).length;
@@ -624,7 +616,7 @@ export function App({ features, session, profile, trialEndsAt }) {
           </div>
           {groups.map((g) => (
             <div className="nav-group" key={g}>
-              <div className="nav-group-label">{g}</div>
+              <div className="nav-group-label">{t("group", g, lang)}</div>
               {navItems
                 .filter((n) => n.group === g)
                 .map((n) => (
@@ -642,7 +634,7 @@ export function App({ features, session, profile, trialEndsAt }) {
                         flex: 1,
                       }}
                     >
-                      {n.label}
+                      {t("nav", n.id, lang)}
                     </span>
                     {n.id === "invoices" && pendingCount > 0 && (
                       <span
@@ -676,6 +668,34 @@ export function App({ features, session, profile, trialEndsAt }) {
                 ))}
             </div>
           ))}
+          <div
+            style={{
+              padding: "10px 8px",
+            }}
+          >
+            <button
+              onClick={toggleLang}
+              title="Nav labels only for now — رابط تجريبي على القايمة الجانبية بس"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: 8,
+                background: "rgba(255,255,255,.06)",
+                border: "1px dashed rgba(255,255,255,.18)",
+                color: "rgba(255,255,255,.7)",
+                cursor: "pointer",
+                fontSize: 12,
+                fontFamily: "IBM Plex Mono, monospace",
+                letterSpacing: ".04em",
+              }}
+            >
+              🌐 {lang === "ar" ? "AR" : "EN"} / {lang === "ar" ? "EN" : "AR"}
+            </button>
+          </div>
           {(myRole === "owner" || myRole === "admin") && (
             <div
               style={{
