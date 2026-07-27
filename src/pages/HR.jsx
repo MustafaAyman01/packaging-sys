@@ -89,8 +89,8 @@ export function HR({ data, update, toast, org, lang }) {
     emp?.overtime_hourly_rate || (emp?.salary ? (emp.salary / 30 / 8) * 1.5 : 0);
 
   // Salary payments
-  const openPaySalary = (emp) => {
-    const month = new Date().toISOString().slice(0, 7);
+  const openPaySalary = (emp, presetMonth) => {
+    const month = presetMonth || new Date().toISOString().slice(0, 7);
     const summary = getMonthlyAttendanceSummary(emp.id, month);
     setSalForm({
       employee_id: emp.id,
@@ -610,7 +610,7 @@ export function HR({ data, update, toast, org, lang }) {
                     onChange={(e) => {
                       const emp = data.employees.find((x) => x.id === e.target.value);
                       if (emp) {
-                        openPaySalary(emp);
+                        openPaySalary(emp, salForm.period_month);
                       } else {
                         setSalForm({});
                       }
