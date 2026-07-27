@@ -219,6 +219,8 @@ export function App({ features, session, profile, trialEndsAt }) {
       "stock_levels",
       "salary_payments",
       "attendance",
+      "penalties",
+      "advances",
       "products",
       "employees",
       "clients",
