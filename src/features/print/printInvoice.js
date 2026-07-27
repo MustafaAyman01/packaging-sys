@@ -12,9 +12,9 @@ export function printInvoice(inv, data, org) {
   // بيانات تواصل الشركة اللي هتظهر تحت اسمها في الفاتورة، كل واحدة بس لو مفعّلة من الإعدادات وليها قيمة فعلاً
   const companyContactLines = [
     org?.show_address_on_invoice && org?.address ? `📍 ${org.address}` : null,
-    org?.show_phone_on_invoice && org?.phone ? `📞 ${org.phone}` : null,
-    org?.show_whatsapp_on_invoice && org?.whatsapp_phone ? `💬 ${org.whatsapp_phone}` : null,
-    org?.show_tax_number_on_invoice && org?.tax_number ? `الرقم الضريبي: ${org.tax_number}` : null,
+    org?.show_phone_on_invoice && org?.phone ? `📞 هاتف: ${org.phone}` : null,
+    org?.show_whatsapp_on_invoice && org?.whatsapp_phone ? `💬 واتساب: ${org.whatsapp_phone}` : null,
+    org?.show_tax_number_on_invoice && org?.tax_number ? `🧾 الرقم الضريبي: ${org.tax_number}` : null,
   ].filter(Boolean);
   const companyContactHtml = companyContactLines.map((line) => `<div>${line}</div>`).join("");
   const client = data.clients.find((c) => c.id === inv.client_id);
@@ -173,12 +173,12 @@ export function printInvoice(inv, data, org) {
   <!-- PARTIES -->
   <div class="parties">
     <div class="party">
-      <div class="party-lbl">من</div>
+      <div class="party-lbl">${inv.type === "sale" ? "البائع (نحن)" : "المشتري (نحن)"}</div>
       <div class="party-name">${companyName}</div>
-      <div class="party-detail">${companySub}${companyContactHtml}</div>
+      <div class="party-detail">${companyContactHtml || companySub}</div>
     </div>
     <div class="party">
-      <div class="party-lbl">${inv.type === "sale" ? "إلى العميل" : "من المورد"}</div>
+      <div class="party-lbl">${inv.type === "sale" ? "المشتري" : "البائع (المورد)"}</div>
       <div class="party-name">${party?.name || "—"}</div>
       <div class="party-detail">
         ${party?.phone ? `<span>📞 ${party.phone}</span><br>` : ""}
