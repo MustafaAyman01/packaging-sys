@@ -377,14 +377,6 @@ export function Settings({ profile, toast, lang }) {
                 </button>
               </div>
             )}
-            <div
-              className="alert alert-success"
-              style={{
-                marginTop: 16,
-              }}
-            >
-              بعد الحفظ، اسم الشركة والشعار يظهران تلقائيًا في الشريط الجانبي وفي رأس النظام بعد تحديث الصفحة.
-            </div>
           </div>
         </div>
       )}
