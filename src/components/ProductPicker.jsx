@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { fc, generateId, today } from "../utils/format";
 import { CategoryUnitManager } from "./CategoryUnitManager";
+import { t } from "../i18n";
 
 // لو اتبعت data + update، بيظهر خيار "+ إضافة منتج جديد" جوه نتائج البحث
 // عشان تقدر تسجّل منتج جديد (خامة أو منتج نهائي) من غير ما تسيب الشاشة اللي انت فيها
-export function ProductPicker({ products, units, value, onSelect, placeholder, renderExtra, data, update, toast }) {
+export function ProductPicker({ products, units, value, onSelect, placeholder, renderExtra, data, update, toast, lang }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -295,7 +296,7 @@ export function ProductPicker({ products, units, value, onSelect, placeholder, r
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={saveCreate}>
                 حفظ وإضافة

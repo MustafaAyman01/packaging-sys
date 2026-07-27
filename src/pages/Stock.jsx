@@ -533,6 +533,7 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org, lang
               <div className="form-group">
                 <label>المنتج *</label>
                 <ProductPicker
+                  lang={lang}
                   products={data.products}
                   units={data.units}
                   value={form.product_id}
@@ -613,7 +614,7 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org, lang
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={addMovement}>
                 تسجيل

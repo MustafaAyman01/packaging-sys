@@ -570,10 +570,10 @@ export function HR({ data, update, toast, org, lang }) {
                           صرف راتب
                         </button>
                         <button className="btn btn-secondary btn-sm" onClick={() => openEditEmp(e)}>
-                          تعديل
+                          {t("actions", "edit", lang)}
                         </button>
                         <button className="btn btn-danger btn-sm" onClick={() => delEmp(e.id)}>
-                          حذف
+                          {t("actions", "delete", lang)}
                         </button>
                       </div>
                     </td>
@@ -985,7 +985,7 @@ export function HR({ data, update, toast, org, lang }) {
                       </td>
                       <td>
                         <button className="btn btn-danger btn-sm" onClick={() => delSalaryPayment(sp)}>
-                          حذف
+                          {t("actions", "delete", lang)}
                         </button>
                       </td>
                     </tr>
@@ -1290,7 +1290,7 @@ export function HR({ data, update, toast, org, lang }) {
                       </td>
                       <td>
                         <button className="btn btn-danger btn-sm" onClick={() => delAdvance(adv)}>
-                          حذف
+                          {t("actions", "delete", lang)}
                         </button>
                       </td>
                     </tr>
@@ -1458,7 +1458,7 @@ export function HR({ data, update, toast, org, lang }) {
                       </td>
                       <td>
                         <button className="btn btn-danger btn-sm" onClick={() => delPenalty(pen)}>
-                          حذف
+                          {t("actions", "delete", lang)}
                         </button>
                       </td>
                     </tr>
@@ -1639,10 +1639,10 @@ export function HR({ data, update, toast, org, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={saveEmp}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>

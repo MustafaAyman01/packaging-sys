@@ -2,8 +2,9 @@ import { useState } from "react";
 import Papa from "papaparse";
 import { generateId, today } from "../utils/format";
 import { IMPORT_TARGETS } from "../constants/importTargets";
+import { t } from "../i18n";
 
-export function CsvImport({ data, update, toast }) {
+export function CsvImport({ data, update, toast, lang }) {
   const [target, setTarget] = useState("products");
   const [rows, setRows] = useState([]);
   const [headers, setHeaders] = useState([]);
@@ -339,7 +340,7 @@ export function CsvImport({ data, update, toast }) {
                 }}
               >
                 <button className="btn btn-secondary" onClick={reset}>
-                  إلغاء
+                  {t("actions", "cancel", lang)}
                 </button>
                 <button className="btn btn-primary" onClick={doImport}>
                   استيراد {rows.length} صف

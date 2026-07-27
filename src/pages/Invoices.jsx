@@ -528,7 +528,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                           });
                         }}
                       >
-                        عرض
+                        {t("actions", "view", lang)}
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -690,6 +690,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                         }}
                       >
                         <ProductPicker
+                          lang={lang}
                           products={data.products}
                           units={data.units}
                           value={item.product_id}
@@ -911,7 +912,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" disabled={saving} onClick={saveInvoice}>
                 💾 {saving ? "جاري الحفظ..." : form.id ? "تحديث الفاتورة" : "حفظ الفاتورة"}
@@ -1292,7 +1293,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setViewInv(null)}>
-                إغلاق
+                {t("actions", "close", lang)}
               </button>
             </div>
           </div>

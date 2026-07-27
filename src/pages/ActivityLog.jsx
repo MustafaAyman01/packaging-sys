@@ -101,12 +101,12 @@ export function ActivityLog({ profile, toast, lang }) {
             <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)}>
               <option value="">الكل</option>
               <option value="create">إضافة</option>
-              <option value="update">تعديل</option>
-              <option value="delete">حذف</option>
+              <option value="update">{t("actions", "edit", lang)}</option>
+              <option value="delete">{t("actions", "delete", lang)}</option>
             </select>
           </div>
           <button className="btn btn-secondary" onClick={load}>
-            تحديث
+            {t("actions", "update", lang)}
           </button>
         </div>
       </div>

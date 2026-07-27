@@ -165,7 +165,7 @@ export function CashVouchers({ data, update, toast, lang }) {
                 </td>
                 <td>
                   <button className="btn btn-danger btn-sm" onClick={() => del(v.id)}>
-                    حذف
+                    {t("actions", "delete", lang)}
                   </button>
                 </td>
               </tr>
@@ -262,10 +262,10 @@ export function CashVouchers({ data, update, toast, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={save}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>

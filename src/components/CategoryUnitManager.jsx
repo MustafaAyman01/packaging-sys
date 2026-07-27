@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { generateId } from "../utils/format";
+import { t } from "../i18n";
 
 // مكوّن مشترك لإدارة الفئات ووحدات القياس (إضافة / تعديل / حذف)
 // مستخدم من صفحة المنتجات وأيضًا من داخل ProductPicker (لإضافة منتج جديد بسرعة من أي شاشة)
-export function CategoryUnitManager({ type, data, update, toast, onClose, onSelectCreated }) {
+export function CategoryUnitManager({ type, data, update, toast, onClose, onSelectCreated, lang }) {
   const [editingItemId, setEditingItemId] = useState(null);
   const [name, setName] = useState("");
   const [abbr, setAbbr] = useState("");
@@ -139,7 +140,7 @@ export function CategoryUnitManager({ type, data, update, toast, onClose, onSele
             </button>
             {editingItemId && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={reset}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
             )}
           </div>
@@ -197,10 +198,10 @@ export function CategoryUnitManager({ type, data, update, toast, onClose, onSele
                   }}
                 >
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEdit(item)}>
-                    تعديل
+                    {t("actions", "edit", lang)}
                   </button>
                   <button type="button" className="btn btn-danger btn-sm" onClick={() => del(item)}>
-                    حذف
+                    {t("actions", "delete", lang)}
                   </button>
                 </div>
               </div>

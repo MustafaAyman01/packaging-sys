@@ -212,10 +212,10 @@ export function Suppliers({ data, update, toast, org, lang }) {
                       كشف حساب
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>
-                      تعديل
+                      {t("actions", "edit", lang)}
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={() => del(s.id)}>
-                      حذف
+                      {t("actions", "delete", lang)}
                     </button>
                   </div>
                 </td>
@@ -233,6 +233,7 @@ export function Suppliers({ data, update, toast, org, lang }) {
           <StatementModal
             party={statementParty}
             partyType="supplier"
+            lang={lang}
             data={data}
             org={org}
             onClose={() => setStatementParty(null)}
@@ -316,10 +317,10 @@ export function Suppliers({ data, update, toast, org, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={save}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>

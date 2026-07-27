@@ -422,7 +422,7 @@ export function Settings({ profile, toast, lang }) {
               }}
             >
               <button className="btn btn-primary" onClick={saveMyProfile}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>

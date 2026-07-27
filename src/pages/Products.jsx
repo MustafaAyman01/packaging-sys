@@ -251,10 +251,10 @@ export function Products({ data, update, updateStock, getStockQty, toast, lang }
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>
-                        تعديل
+                        {t("actions", "edit", lang)}
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => del(p.id)}>
-                        حذف
+                        {t("actions", "delete", lang)}
                       </button>
                     </div>
                   </td>
@@ -541,10 +541,10 @@ export function Products({ data, update, updateStock, getStockQty, toast, lang }
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={save}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>
@@ -552,6 +552,7 @@ export function Products({ data, update, updateStock, getStockQty, toast, lang }
       )}
       {manageType && (
         <CategoryUnitManager
+          lang={lang}
           type={manageType}
           data={data}
           update={update}

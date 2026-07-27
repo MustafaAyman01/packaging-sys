@@ -1,8 +1,9 @@
 import React from "react";
 import { fc, fd } from "../utils/format";
 import { buildStatementEntries, printStatement } from "../features/print/statement";
+import { t } from "../i18n";
 
-export function StatementModal({ party, partyType, data, org, onClose }) {
+export function StatementModal({ party, partyType, data, org, onClose, lang }) {
   const entries = buildStatementEntries(party, partyType, data);
   const finalBalance = entries.length ? entries[entries.length - 1].balance : 0;
   return (
@@ -97,7 +98,7 @@ export function StatementModal({ party, partyType, data, org, onClose }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            إغلاق
+            {t("actions", "close", lang)}
           </button>
         </div>
       </div>

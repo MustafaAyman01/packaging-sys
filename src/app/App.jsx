@@ -680,34 +680,6 @@ export function App({ features, session, profile, trialEndsAt }) {
                 ))}
             </div>
           ))}
-          <div
-            style={{
-              padding: "10px 8px",
-            }}
-          >
-            <button
-              onClick={toggleLang}
-              title="Nav labels only for now — رابط تجريبي على القايمة الجانبية بس"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 8,
-                background: "rgba(255,255,255,.06)",
-                border: "1px dashed rgba(255,255,255,.18)",
-                color: "rgba(255,255,255,.7)",
-                cursor: "pointer",
-                fontSize: 12,
-                fontFamily: "IBM Plex Mono, monospace",
-                letterSpacing: ".04em",
-              }}
-            >
-              🌐 {lang === "ar" ? "AR" : "EN"} / {lang === "ar" ? "EN" : "AR"}
-            </button>
-          </div>
           {(myRole === "owner" || myRole === "admin") && (
             <div
               style={{
@@ -842,6 +814,19 @@ export function App({ features, session, profile, trialEndsAt }) {
               <div className="topbar-title">{pageTitles[page] || page}</div>
             </div>
             <div className="topbar-actions">
+              <button
+                className="theme-toggle"
+                onClick={toggleLang}
+                title="Switch language / تبديل اللغة"
+                aria-label="Switch language"
+                style={{
+                  fontFamily: "IBM Plex Mono, monospace",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {lang === "ar" ? "EN" : "AR"}
+              </button>
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}

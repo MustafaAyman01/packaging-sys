@@ -715,7 +715,7 @@ export function Payments({ data, update, toast, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={savePayment}>
                 تسجيل
@@ -814,7 +814,7 @@ export function Payments({ data, update, toast, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setEditingPayment(null)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={saveEditPayment}>
                 حفظ التعديل

@@ -288,6 +288,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
                 <div className="form-group">
                   <label>الخامة *</label>
                   <ProductPicker
+                    lang={lang}
                     products={data.products}
                     units={data.units}
                     value={form.material_product_id}
@@ -393,6 +394,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
                 <div className="form-group">
                   <label>المنتج *</label>
                   <ProductPicker
+                    lang={lang}
                     products={data.products}
                     units={data.units}
                     value={form.output_product_id}
@@ -474,7 +476,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={saveOrder}>
                 حفظ أمر التصنيع
@@ -567,7 +569,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setViewOrder(null)}>
-                إغلاق
+                {t("actions", "close", lang)}
               </button>
             </div>
           </div>

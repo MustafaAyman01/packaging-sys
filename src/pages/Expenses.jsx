@@ -147,10 +147,10 @@ export function Expenses({ data, update, toast, lang }) {
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(e)}>
-                        تعديل
+                        {t("actions", "edit", lang)}
                       </button>
                       <button className="btn btn-danger btn-sm" onClick={() => del(e.id)}>
-                        حذف
+                        {t("actions", "delete", lang)}
                       </button>
                     </div>
                   </td>
@@ -248,10 +248,10 @@ export function Expenses({ data, update, toast, lang }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                إلغاء
+                {t("actions", "cancel", lang)}
               </button>
               <button className="btn btn-primary" onClick={save}>
-                حفظ
+                {t("actions", "save", lang)}
               </button>
             </div>
           </div>

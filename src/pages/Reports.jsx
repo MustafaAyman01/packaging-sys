@@ -390,7 +390,7 @@ export function Reports({ data, getStockQty, org, lang }) {
           </div>
           <div className="stat-grid">
             <KpiCard
-              label="إجمالي المبيعات"
+              label={t("cards", "total_sales", lang)}
               value={totalSalesCur}
               prev={pct(totalSalesCur, totalSalesPrev)}
               prevVal={totalSalesPrev}
@@ -399,7 +399,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               border="var(--green)"
             />
             <KpiCard
-              label="المبالغ المحصلة"
+              label={t("cards", "collected", lang)}
               value={collectedCur}
               prev={pct(collectedCur, collectedPrev)}
               prevVal={collectedPrev}
@@ -408,7 +408,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               border="var(--green)"
             />
             <KpiCard
-              label="إجمالي المصروفات"
+              label={t("cards", "total_expenses", lang)}
               value={totalExpCur}
               prev={pct(totalExpCur, totalExpPrev)}
               prevVal={totalExpPrev}
@@ -418,7 +418,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               invert={true}
             />
             <KpiCard
-              label="صافي الربح"
+              label={t("cards", "net_profit", lang)}
               value={netCur}
               prev={pct(netCur, netPrev)}
               prevVal={netPrev}
@@ -427,7 +427,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               border={netCur >= 0 ? "var(--green)" : "var(--red)"}
             />
             <KpiCard
-              label="عدد الفواتير"
+              label={t("common", "invoice_count", lang)}
               value={salesCur.length}
               prev={pct(salesCur.length, salesPrev.length)}
               prevVal={salesPrev.length}
@@ -438,7 +438,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               isCount={true}
             />
             <KpiCard
-              label="متوسط الفاتورة"
+              label={t("cards", "avg_invoice", lang)}
               value={salesCur.length ? totalSalesCur / salesCur.length : 0}
               prev={pct(
                 salesCur.length ? totalSalesCur / salesCur.length : 0,
@@ -450,7 +450,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               border="var(--blue)"
             />
             <KpiCard
-              label="مستحقات العملاء (إجمالي كلي)"
+              label={t("cards", "receivables_alltime", lang)}
               value={totalReceivablesAllTime}
               prev={null}
               prevVal={undefined}
@@ -459,7 +459,7 @@ export function Reports({ data, getStockQty, org, lang }) {
               border="var(--amber)"
             />
             <KpiCard
-              label="رواتب مصروفة"
+              label={t("cards", "salaries_expensed", lang)}
               value={totalSalariesExp}
               prev={null}
               prevVal={undefined}
@@ -480,33 +480,33 @@ export function Reports({ data, getStockQty, org, lang }) {
             <div className="card-body">
               {[
                 {
-                  label: "إيرادات المبيعات",
+                  label: t("cards", "sales_revenue", lang),
                   value: totalSalesCur,
                   color: "var(--green)",
                 },
                 {
-                  label: "تكلفة المبيعات",
+                  label: t("cards", "cost_of_sales", lang),
                   value: -totalPurchCur,
                   color: "var(--red)",
                 },
                 {
-                  label: "مجمل الربح",
+                  label: t("cards", "gross_profit", lang),
                   value: grossCur,
                   color: grossCur >= 0 ? "var(--green)" : "var(--red)",
                   bold: true,
                 },
                 {
-                  label: "رواتب وأجور",
+                  label: t("cards", "salaries_wages", lang),
                   value: -totalSalariesExp,
                   color: "var(--red)",
                 },
                 {
-                  label: "مصروفات أخرى",
+                  label: t("cards", "other_expenses", lang),
                   value: -(totalExpCur - totalSalariesExp),
                   color: "var(--red)",
                 },
                 {
-                  label: "صافي الربح",
+                  label: t("cards", "net_profit", lang),
                   value: netCur,
                   color: netCur >= 0 ? "var(--green)" : "var(--red)",
                   bold: true,
@@ -561,28 +561,28 @@ export function Reports({ data, getStockQty, org, lang }) {
           <div className="stat-grid">
             {[
               {
-                label: "إجمالي المبيعات",
+                label: t("cards", "total_sales", lang),
                 value: sum(periodSales, "total_amount"),
                 color: "var(--green)",
                 bg: "var(--green-bg)",
                 icon: "📈",
               },
               {
-                label: "إجمالي المشتريات",
+                label: t("cards", "total_purchases", lang),
                 value: sum(periodPurch, "total_amount"),
                 color: "var(--blue)",
                 bg: "var(--blue-bg)",
                 icon: "🛒",
               },
               {
-                label: "إجمالي المصروفات",
+                label: t("cards", "total_expenses", lang),
                 value: sum(periodExp, "amount"),
                 color: "var(--red)",
                 bg: "var(--red-bg)",
                 icon: "💸",
               },
               {
-                label: "صافي الربح الكلي",
+                label: t("cards", "net_profit_total", lang),
                 value:
                   sum(periodSales, "total_amount") -
                   sum(periodPurch, "total_amount") -
@@ -604,14 +604,14 @@ export function Reports({ data, getStockQty, org, lang }) {
                 icon: "💹",
               },
               {
-                label: "مستحقات العملاء (إجمالي كلي)",
+                label: t("cards", "receivables_alltime", lang),
                 value: totalReceivablesAllTime,
                 color: "var(--amber)",
                 bg: "var(--amber-bg)",
                 icon: "⏳",
               },
               {
-                label: "مستحقات الموردين (إجمالي كلي)",
+                label: t("cards", "payables_alltime", lang),
                 value: totalPayablesAllTime,
                 color: "var(--red)",
                 bg: "var(--red-bg)",
