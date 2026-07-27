@@ -173,12 +173,12 @@ export function printInvoice(inv, data, org) {
   <!-- PARTIES -->
   <div class="parties">
     <div class="party">
-      <div class="party-lbl">${inv.type === "sale" ? "البائع (نحن)" : "المشتري (نحن)"}</div>
+      <div class="party-lbl">${inv.type === "sale" ? "البائع" : "المشتري"}</div>
       <div class="party-name">${companyName}</div>
       <div class="party-detail">${companyContactHtml || companySub}</div>
     </div>
     <div class="party">
-      <div class="party-lbl">${inv.type === "sale" ? "المشتري" : "البائع (المورد)"}</div>
+      <div class="party-lbl">${inv.type === "sale" ? "المشتري" : "البائع"}</div>
       <div class="party-name">${party?.name || "—"}</div>
       <div class="party-detail">
         ${party?.phone ? `<span>📞 ${party.phone}</span><br>` : ""}
