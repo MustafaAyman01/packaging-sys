@@ -13,6 +13,14 @@ export function Settings({ profile, toast, lang }) {
   const [orgName, setOrgName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoPreview, setLogoPreview] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [showAddress, setShowAddress] = useState(true);
+  const [showPhone, setShowPhone] = useState(true);
+  const [showWhatsapp, setShowWhatsapp] = useState(true);
+  const [showTaxNumber, setShowTaxNumber] = useState(true);
   // new user form
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -32,6 +40,14 @@ export function Settings({ profile, toast, lang }) {
     setOrgName(orgRes.data?.name || "");
     setLogoUrl(orgRes.data?.logo_url || "");
     setLogoPreview(orgRes.data?.logo_url || "");
+    setAddress(orgRes.data?.address || "");
+    setPhone(orgRes.data?.phone || "");
+    setWhatsappPhone(orgRes.data?.whatsapp_phone || "");
+    setTaxNumber(orgRes.data?.tax_number || "");
+    setShowAddress(orgRes.data?.show_address_on_invoice ?? true);
+    setShowPhone(orgRes.data?.show_phone_on_invoice ?? true);
+    setShowWhatsapp(orgRes.data?.show_whatsapp_on_invoice ?? true);
+    setShowTaxNumber(orgRes.data?.show_tax_number_on_invoice ?? true);
     setMembers(profsRes.data || []);
     setLoading(false);
   };
@@ -69,6 +85,22 @@ export function Settings({ profile, toast, lang }) {
       if (error) {
         console.error("update_organization error:", error);
         toast("خطأ: " + error.message);
+        setSaving(false);
+        return;
+      }
+      const { error: detailsError } = await sb.rpc("update_organization_details", {
+        p_address: address.trim() || null,
+        p_phone: phone.trim() || null,
+        p_whatsapp_phone: whatsappPhone.trim() || null,
+        p_tax_number: taxNumber.trim() || null,
+        p_show_address: showAddress,
+        p_show_phone: showPhone,
+        p_show_whatsapp: showWhatsapp,
+        p_show_tax_number: showTaxNumber,
+      });
+      if (detailsError) {
+        console.error("update_organization_details error:", detailsError);
+        toast("خطأ في حفظ بيانات التواصل: " + detailsError.message);
         setSaving(false);
         return;
       }
@@ -230,6 +262,107 @@ export function Settings({ profile, toast, lang }) {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+            <div className="form-row form-row-2">
+              <div className="form-group">
+                <label>العنوان</label>
+                <input value={address} onChange={(e) => setAddress(e.target.value)} disabled={!canManage} />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 6,
+                    fontSize: 12.5,
+                    color: "var(--text2)",
+                    fontWeight: 400,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={showAddress}
+                    onChange={(e) => setShowAddress(e.target.checked)}
+                    disabled={!canManage}
+                  />
+                  يظهر في الفاتورة
+                </label>
+              </div>
+              <div className="form-group">
+                <label>تليفون للتواصل</label>
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!canManage} />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 6,
+                    fontSize: 12.5,
+                    color: "var(--text2)",
+                    fontWeight: 400,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={showPhone}
+                    onChange={(e) => setShowPhone(e.target.checked)}
+                    disabled={!canManage}
+                  />
+                  يظهر في الفاتورة
+                </label>
+              </div>
+            </div>
+            <div className="form-row form-row-2">
+              <div className="form-group">
+                <label>رقم واتساب</label>
+                <input
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                  disabled={!canManage}
+                  placeholder="مثال: 201001234567"
+                />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 6,
+                    fontSize: 12.5,
+                    color: "var(--text2)",
+                    fontWeight: 400,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={showWhatsapp}
+                    onChange={(e) => setShowWhatsapp(e.target.checked)}
+                    disabled={!canManage}
+                  />
+                  يظهر في الفاتورة
+                </label>
+              </div>
+              <div className="form-group">
+                <label>الرقم الضريبي (اختياري)</label>
+                <input value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} disabled={!canManage} />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 6,
+                    fontSize: 12.5,
+                    color: "var(--text2)",
+                    fontWeight: 400,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={showTaxNumber}
+                    onChange={(e) => setShowTaxNumber(e.target.checked)}
+                    disabled={!canManage}
+                  />
+                  يظهر في الفاتورة
+                </label>
               </div>
             </div>
             {canManage && (

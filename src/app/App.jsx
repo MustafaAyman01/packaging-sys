@@ -59,7 +59,9 @@ export function App({ features, session, profile, trialEndsAt }) {
   useEffect(() => {
     if (SUPABASE_ENABLED && profile) {
       sb.from("organizations")
-        .select("id,name,name_ar,logo_url")
+        .select(
+          "id,name,name_ar,logo_url,address,phone,whatsapp_phone,tax_number,show_address_on_invoice,show_phone_on_invoice,show_whatsapp_on_invoice,show_tax_number_on_invoice"
+        )
         .eq("id", profile.org_id)
         .single()
         .then(({ data }) => {

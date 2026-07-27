@@ -9,6 +9,14 @@ export function printInvoice(inv, data, org) {
   const footerLogoHtml = org?.logo_url
     ? `<img src="${org.logo_url}" alt="logo" style="height:16px;vertical-align:middle;border-radius:3px;margin-left:4px">`
     : "👖";
+  // بيانات تواصل الشركة اللي هتظهر تحت اسمها في الفاتورة، كل واحدة بس لو مفعّلة من الإعدادات وليها قيمة فعلاً
+  const companyContactLines = [
+    org?.show_address_on_invoice && org?.address ? `📍 ${org.address}` : null,
+    org?.show_phone_on_invoice && org?.phone ? `📞 ${org.phone}` : null,
+    org?.show_whatsapp_on_invoice && org?.whatsapp_phone ? `💬 ${org.whatsapp_phone}` : null,
+    org?.show_tax_number_on_invoice && org?.tax_number ? `الرقم الضريبي: ${org.tax_number}` : null,
+  ].filter(Boolean);
+  const companyContactHtml = companyContactLines.map((line) => `<div>${line}</div>`).join("");
   const client = data.clients.find((c) => c.id === inv.client_id);
   const supplier = data.suppliers.find((s) => s.id === inv.supplier_id);
   const party = inv.type === "sale" ? client : supplier;
@@ -167,7 +175,7 @@ export function printInvoice(inv, data, org) {
     <div class="party">
       <div class="party-lbl">من</div>
       <div class="party-name">${companyName}</div>
-      <div class="party-detail">${companySub}</div>
+      <div class="party-detail">${companySub}${companyContactHtml}</div>
     </div>
     <div class="party">
       <div class="party-lbl">${inv.type === "sale" ? "إلى العميل" : "من المورد"}</div>
