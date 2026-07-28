@@ -1012,6 +1012,13 @@ code {
   table {
     min-width: 560px;
   }
+  /* الجداول اللي جوه مودال مباشرة (زي بنود الفاتورة) مش لفوفة في .card، فمن غيرها
+     كانت بتطلع بره حدود المودال على الموبايل والتابلت بدل ما تعمل سكرول أفقي */
+  .modal-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   th,
   td {
     padding: 8px 6px;
