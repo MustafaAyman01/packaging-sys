@@ -207,6 +207,8 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
 
       if (isEdit) {
         const previousInvoices = data.invoices;
+        const previousInvoice = previousInvoices.find((i) => i.id === form.id);
+        const previousPaidAmount = previousInvoice?.paid_amount || 0;
         const inv = {
           ...form,
           ...totals,
@@ -219,6 +221,21 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
           previousInvoices.map((i) => (i.id === form.id ? inv : i))
         );
         if (!errors || !errors.length) {
+          // لو زاد المبلغ المدفوع عن تعديل الفاتورة، نسجّل الفرق كدفعة فعلية في كشف
+          // الحساب/شاشة المدفوعات — مش بس رقم داخل الفاتورة نفسها
+          const paidDelta = resolvedPaidAmount - previousPaidAmount;
+          if (paidDelta > 0.009) {
+            const payment = {
+              id: generateId(),
+              invoice_id: inv.id,
+              amount: paidDelta,
+              payment_date: today(),
+              method: "cash",
+              reference_number: "",
+              notes: "",
+            };
+            await update("payments", [...data.payments, payment]);
+          }
           // تعديل المخزون بالفرق فقط بين الكميات القديمة والجديدة لكل منتج
           const newQtyMap = {};
           invoiceItems.forEach((i) => {
@@ -264,6 +281,20 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
           invoiceItems.forEach((item) => {
             updateStock(item.product_id, form.type === "sale" ? -item.quantity : item.quantity);
           });
+          // لو الفاتورة اتسجّلت بمبلغ مدفوع (كاملة أو جزئي)، نسجّله كدفعة فعلية
+          // في كشف الحساب/شاشة المدفوعات — مش بس رقم داخل الفاتورة نفسها
+          if (resolvedPaidAmount > 0.009) {
+            const payment = {
+              id: generateId(),
+              invoice_id: inv.id,
+              amount: resolvedPaidAmount,
+              payment_date: inv.invoice_date || today(),
+              method: "cash",
+              reference_number: "",
+              notes: "",
+            };
+            await update("payments", [...data.payments, payment]);
+          }
           setShowModal(false);
           toast("تم حفظ الفاتورة ✓");
           return;
