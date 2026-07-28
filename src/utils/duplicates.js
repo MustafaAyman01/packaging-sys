@@ -1,5 +1,16 @@
+// بنشيل أي لاحقة "فرع ..." من الاسم عشان نوصل للاسم الأساسي للشركة
+// (مثلاً "شركة التقدم فرع الإسكندرية" -> "شركة التقدم")، وكمان بنشيل أي تريلة
+// "(مدموج مع ...)" ناتجة عن دمج سابق عشان السجل القديم يتقارن بالاسم الأصلي بتاعه
+function baseName(name) {
+  return name
+    .replace(/\s*\(مدموج مع.*?\)\s*/g, " ")
+    .replace(/\s+فرع\s+.*/u, "")
+    .trim()
+    .toLowerCase();
+}
+
 // بيكتشف مجموعات السجلات المكررة (عملاء أو موردين) اللي غالباً بتمثل نفس الجهة
-// فعلياً: نفس الاسم بالظبط (بعد تجاهل المسافات والحالة)، أو نفس رقم التليفون.
+// فعلياً: نفس الاسم بالظبط، نفس الاسم الأساسي بعد شيل "فرع ..."، أو نفس رقم التليفون.
 // بيستخدم union-find بسيط عشان لو سجلين اتربطوا بمعيار الاسم وسجل تالت اتربط
 // بمعيار التليفون مع واحد منهم، الثلاثة يترموا في نفس المجموعة.
 export function findDuplicateGroups(list) {
@@ -10,6 +21,12 @@ export function findDuplicateGroups(list) {
       const nameKey = "n:" + c.name.trim().toLowerCase();
       if (!byKey.has(nameKey)) byKey.set(nameKey, new Set());
       byKey.get(nameKey).add(c.id);
+      const base = baseName(c.name);
+      if (base) {
+        const baseKey = "b:" + base;
+        if (!byKey.has(baseKey)) byKey.set(baseKey, new Set());
+        byKey.get(baseKey).add(c.id);
+      }
       if (c.phone && c.phone.trim()) {
         const phoneKey = "p:" + c.phone.trim();
         if (!byKey.has(phoneKey)) byKey.set(phoneKey, new Set());

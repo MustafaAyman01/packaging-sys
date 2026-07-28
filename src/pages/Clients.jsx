@@ -13,7 +13,10 @@ export function Clients({ data, update, toast, org, lang }) {
   const [form, setForm] = useState({});
   const [statementParty, setStatementParty] = useState(null);
   const autoMergedRef = useRef(new Set());
-  const filtered = data.clients.filter((c) => !search || c.name.includes(search) || c.phone.includes(search));
+  const [showInactive, setShowInactive] = useState(false);
+  const filtered = data.clients
+    .filter((c) => showInactive || c.is_active)
+    .filter((c) => !search || c.name.includes(search) || c.phone.includes(search));
   const openNew = () => {
     setEditing(null);
     setForm({
@@ -159,6 +162,19 @@ export function Clients({ data, update, toast, org, lang }) {
             autoComplete="off"
           />
         </div>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 13,
+            color: "var(--text2)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+          عرض الموقوفة/المدموجة
+        </label>
         <button className="btn btn-primary" onClick={openNew}>
           + عميل جديد
         </button>

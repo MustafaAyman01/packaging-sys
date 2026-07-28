@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
+import { PartyPicker } from "../components/PartyPicker";
 import { StatusBadge } from "../components/StatusBadge";
 import { printInvoice } from "../features/print/printInvoice";
 import { generateId, fc, fd, today } from "../utils/format";
@@ -615,46 +616,32 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
               {form.type === "sale" ? (
                 <div className="form-group">
                   <label>العميل</label>
-                  <select
-                    value={form.client_id || ""}
-                    onChange={(e) =>
+                  <PartyPicker
+                    parties={data.clients}
+                    value={form.client_id}
+                    onSelect={(id) =>
                       setForm({
                         ...form,
-                        client_id: e.target.value,
+                        client_id: id,
                       })
                     }
-                  >
-                    <option value="">اختر عميل</option>
-                    {data.clients
-                      .filter((c) => c.is_active)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="ابحث باسم العميل أو التليفون..."
+                  />
                 </div>
               ) : (
                 <div className="form-group">
                   <label>المورد</label>
-                  <select
-                    value={form.supplier_id || ""}
-                    onChange={(e) =>
+                  <PartyPicker
+                    parties={data.suppliers}
+                    value={form.supplier_id}
+                    onSelect={(id) =>
                       setForm({
                         ...form,
-                        supplier_id: e.target.value,
+                        supplier_id: id,
                       })
                     }
-                  >
-                    <option value="">اختر مورد</option>
-                    {data.suppliers
-                      .filter((s) => s.is_active)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="ابحث باسم المورد أو التليفون..."
+                  />
                 </div>
               )}
               <div
