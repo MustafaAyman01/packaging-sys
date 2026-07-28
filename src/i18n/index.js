@@ -162,6 +162,7 @@ export const STRINGS = {
     gross_profit: { ar: "مجمل الربح", en: "Gross Profit" },
     salaries_wages: { ar: "رواتب وأجور", en: "Salaries & Wages" },
     other_expenses: { ar: "مصروفات أخرى", en: "Other Expenses" },
+    manufacturing_costs: { ar: "تكلفة عمليات التصنيع", en: "Manufacturing Processing Costs" },
     net_profit_total: { ar: "صافي الربح الكلي", en: "Total Net Profit" },
     payables_alltime: { ar: "مستحقات الموردين (إجمالي كلي)", en: "Supplier Payables (All Time)" },
   },

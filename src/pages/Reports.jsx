@@ -105,6 +105,13 @@ export function Reports({ data, getStockQty, org, lang }) {
   const vouchCur = (data.cash_vouchers || []).filter((v) => inRange(v.voucher_date, range));
   const vouchPrev = (data.cash_vouchers || []).filter((v) => inRange(v.voucher_date, prevRange));
   const sum = (arr, key) => arr.reduce((s, x) => s + (x[key] || 0), 0);
+  // مصاريف التصنيع (مغسلة، قص، خياطة...) — مصروف نقدي حقيقي لازم يتخصم من صافي الربح
+  // برضو، مش بس يزوّد تكلفة تقييم المخزون. متجمعوش مع تكلفة الخامة لأنها اتخصمت
+  // أصلاً مرة واحدة ضمن المشتريات وقت شرائها.
+  const mfgCur = (data.manufacturing_orders || []).filter((o) => inRange(o.order_date, range));
+  const mfgPrev = (data.manufacturing_orders || []).filter((o) => inRange(o.order_date, prevRange));
+  const totalMfgCostsCur = sum(mfgCur, "expenses_total");
+  const totalMfgCostsPrev = sum(mfgPrev, "expenses_total");
   const pct = (cur, prev) => {
     if (prev === 0 || prev === null || prev === undefined) return null;
     if (Math.abs(prev) < 0.01) return null; // تجنب القسمة على أرقام قريبة من الصفر
@@ -128,9 +135,9 @@ export function Reports({ data, getStockQty, org, lang }) {
   const vReceiptsPrev = vouchPrev.filter((v) => v.type === "receipt").reduce((s, v) => s + v.amount, 0);
   const vPaymentsPrev = vouchPrev.filter((v) => v.type === "payment").reduce((s, v) => s + v.amount, 0);
   const grossCur = totalSalesCur - totalPurchCur;
-  const netCur = grossCur - totalExpCur + vReceiptsCur - vPaymentsCur;
+  const netCur = grossCur - totalExpCur - totalMfgCostsCur + vReceiptsCur - vPaymentsCur;
   const grossPrev = sum(salesPrev, "total_amount") - sum(filterInvs(prevRange, "purchase"), "total_amount");
-  const netPrev = grossPrev - totalExpPrev + vReceiptsPrev - vPaymentsPrev;
+  const netPrev = grossPrev - totalExpPrev - totalMfgCostsPrev + vReceiptsPrev - vPaymentsPrev;
   const collectedCur = salesCur.reduce((s, i) => s + i.paid_amount, 0);
   const collectedPrev = salesPrev.reduce((s, i) => s + i.paid_amount, 0);
 
@@ -496,6 +503,11 @@ export function Reports({ data, getStockQty, org, lang }) {
                   bold: true,
                 },
                 {
+                  label: t("cards", "manufacturing_costs", lang),
+                  value: -totalMfgCostsCur,
+                  color: "var(--red)",
+                },
+                {
                   label: t("cards", "salaries_wages", lang),
                   value: -totalSalariesExp,
                   color: "var(--red)",
@@ -519,7 +531,7 @@ export function Reports({ data, getStockQty, org, lang }) {
                     display: "flex",
                     justifyContent: "space-between",
                     padding: "10px 0",
-                    borderBottom: i < 5 ? "1px solid var(--border)" : "none",
+                    borderBottom: i < 6 ? "1px solid var(--border)" : "none",
                     fontWeight: r.bold ? 700 : 400,
                   }}
                 >
@@ -586,18 +598,21 @@ export function Reports({ data, getStockQty, org, lang }) {
                 value:
                   sum(periodSales, "total_amount") -
                   sum(periodPurch, "total_amount") -
-                  sum(periodExp, "amount"),
+                  sum(periodExp, "amount") -
+                  totalMfgCostsCur,
                 color:
                   sum(periodSales, "total_amount") -
                     sum(periodPurch, "total_amount") -
-                    sum(periodExp, "amount") >=
+                    sum(periodExp, "amount") -
+                    totalMfgCostsCur >=
                   0
                     ? "var(--green)"
                     : "var(--red)",
                 bg:
                   sum(periodSales, "total_amount") -
                     sum(periodPurch, "total_amount") -
-                    sum(periodExp, "amount") >=
+                    sum(periodExp, "amount") -
+                    totalMfgCostsCur >=
                   0
                     ? "var(--green-bg)"
                     : "var(--red-bg)",

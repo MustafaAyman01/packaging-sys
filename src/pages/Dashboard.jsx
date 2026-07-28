@@ -23,7 +23,14 @@ export function Dashboard({ data, setPage, getStockQty, lang }) {
     .filter((e) => e.category === "رواتب")
     .reduce((s, e) => s + e.amount, 0);
 
-  const netProfit = totalSales - totalPurchases - totalExpenses;
+  // مصاريف التصنيع (مغسلة، قص، خياطة...) بتزوّد تكلفة المنتج النهائي بس محتاجة
+  // تتخصم برضو من صافي الربح فعليًا لأنها مصروف نقدي حقيقي، مش مجرد رقم تقييم مخزون.
+  // ملحوظة: بنجمع expenses_total بس مش material_cost_total، لأن تكلفة الخامة
+  // نفسها اتخصمت أصلاً مرة واحدة ضمن "إجمالي المشتريات" وقت شرائها.
+  const mfgOrders = data.manufacturing_orders || [];
+  const totalManufacturingCosts = mfgOrders.reduce((s, o) => s + (o.expenses_total || 0), 0);
+
+  const netProfit = totalSales - totalPurchases - totalExpenses - totalManufacturingCosts;
 
   const activeProducts = data.products.filter((p) => p.is_active);
   const lowStock = activeProducts.filter((p) => getStockQty(p.id) < p.min_stock_level);
@@ -57,7 +64,6 @@ export function Dashboard({ data, setPage, getStockQty, lang }) {
   const duePayables = dueInvoices.filter((i) => i.type === "purchase");
 
   const thisMonth = today().slice(0, 7);
-  const mfgOrders = data.manufacturing_orders || [];
   const mfgThisMonth = mfgOrders.filter((o) => (o.order_date || "").startsWith(thisMonth));
 
   const recentInvs = [...data.invoices]
