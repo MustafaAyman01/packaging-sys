@@ -89,7 +89,22 @@ export function Products({ data, update, updateStock, getStockQty, toast, lang }
     toast(editing ? "تم تعديل المنتج ✓" : "تم إضافة المنتج ✓");
   };
   const del = (id) => {
-    if (confirm("حذف المنتج؟")) {
+    const product = data.products.find((p) => p.id === id);
+    const relatedItems = data.invoices
+      .flatMap((i) => i.items || [])
+      .filter((it) => it.product_id === id).length;
+    const relatedMovements = (data.stock_movements || []).filter((m) => m.product_id === id).length;
+    const relatedMfg = (data.manufacturing_orders || []).filter(
+      (o) => o.material_product_id === id || o.output_product_id === id
+    ).length;
+
+    if (relatedItems > 0 || relatedMovements > 0 || relatedMfg > 0) {
+      toast(
+        `⚠️ لا يمكن حذف "${product?.name}" — مستخدم في ${relatedItems} بند فاتورة و${relatedMovements} حركة مخزون و${relatedMfg} أمر تصنيع. حذفه هيسيب العمليات دي من غير اسم منتج مرتبط بيها، وده هيبوّظ التقارير وسجل المخزون. لو مش محتاج المنتج يظهر في القوائم تاني، وقّفه من فورم التعديل (خانة الحالة) بدل الحذف — بياناته وسجله هيفضلوا محفوظين بالكامل.`
+      );
+      return;
+    }
+    if (confirm(`حذف المنتج "${product?.name}"؟ المنتج ده مش مستخدم في أي فاتورة أو حركة مخزون أو أمر تصنيع.`)) {
       update(
         "products",
         data.products.filter((p) => p.id !== id)

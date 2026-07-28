@@ -72,13 +72,38 @@ export function Clients({ data, update, toast, org, lang }) {
     toast(editing ? "تم تعديل العميل ✓" : "تم إضافة العميل ✓");
   };
   const del = (id) => {
-    if (confirm("حذف العميل؟")) {
+    const client = data.clients.find((c) => c.id === id);
+    const relatedInvoices = data.invoices.filter((i) => i.client_id === id).length;
+    const relatedPayments = data.payments.filter((p) => p.party_type === "client" && p.party_id === id).length;
+
+    if (relatedInvoices > 0 || relatedPayments > 0) {
+      toast(
+        `⚠️ لا يمكن حذف "${client?.name}" — عنده ${relatedInvoices} فاتورة و${relatedPayments} دفعة مسجّلة. حذفه هيسيب العمليات دي من غير اسم عميل مرتبط بيها، وده هيبوّظ كشف الحساب والتقارير المالية. لو مش محتاج العميل يظهر في القوائم تاني، استخدم زرار "إيقاف" بدل الحذف — بياناته وسجله المالي هيفضلوا محفوظين بالكامل.`
+      );
+      return;
+    }
+    if (confirm(`حذف العميل "${client?.name}"؟ العميل ده مفيهوش أي فواتير أو دفعات مسجّلة.`)) {
       update(
         "clients",
         data.clients.filter((c) => c.id !== id)
       );
       toast("تم الحذف");
     }
+  };
+  const toggleActive = (c) => {
+    if (
+      !confirm(
+        c.is_active
+          ? `إيقاف "${c.name}"؟ هيختفي من قوائم الاختيار في الفواتير الجديدة، لكن كل سجله وفواتيره القديمة هتفضل محفوظة زي ما هي.`
+          : `تفعيل "${c.name}" تاني؟`
+      )
+    )
+      return;
+    update(
+      "clients",
+      data.clients.map((x) => (x.id === c.id ? { ...x, is_active: !x.is_active } : x))
+    );
+    toast(c.is_active ? "تم إيقاف العميل" : "تم تفعيل العميل");
   };
   const getBalance = (id) => getPartyBalance(data, "client", id);
   // عدد الفواتير المرتبطة بالعميل — بنستخدمه كمعيار لاختيار "الأساسي" تلقائي
@@ -239,6 +264,9 @@ export function Clients({ data, update, toast, org, lang }) {
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)}>
                       {t("actions", "edit", lang)}
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => toggleActive(c)}>
+                      {c.is_active ? "إيقاف" : "تفعيل"}
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={() => del(c.id)}>
                       {t("actions", "delete", lang)}

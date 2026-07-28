@@ -70,13 +70,38 @@ export function Suppliers({ data, update, toast, org, lang }) {
     toast(editing ? "تم تعديل المورد ✓" : "تم إضافة المورد ✓");
   };
   const del = (id) => {
-    if (confirm("حذف المورد؟")) {
+    const supplier = data.suppliers.find((s) => s.id === id);
+    const relatedInvoices = data.invoices.filter((i) => i.supplier_id === id).length;
+    const relatedPayments = data.payments.filter((p) => p.party_type === "supplier" && p.party_id === id).length;
+
+    if (relatedInvoices > 0 || relatedPayments > 0) {
+      toast(
+        `⚠️ لا يمكن حذف "${supplier?.name}" — عنده ${relatedInvoices} فاتورة و${relatedPayments} دفعة مسجّلة. حذفه هيسيب العمليات دي من غير اسم مورد مرتبط بيها، وده هيبوّظ كشف الحساب والتقارير المالية. لو مش محتاج المورد يظهر في القوائم تاني، استخدم زرار "إيقاف" بدل الحذف — بياناته وسجله المالي هيفضلوا محفوظين بالكامل.`
+      );
+      return;
+    }
+    if (confirm(`حذف المورد "${supplier?.name}"؟ المورد ده مفيهوش أي فواتير أو دفعات مسجّلة.`)) {
       update(
         "suppliers",
         data.suppliers.filter((s) => s.id !== id)
       );
       toast("تم الحذف");
     }
+  };
+  const toggleActive = (s) => {
+    if (
+      !confirm(
+        s.is_active
+          ? `إيقاف "${s.name}"؟ هيختفي من قوائم الاختيار في الفواتير الجديدة، لكن كل سجله وفواتيره القديمة هتفضل محفوظة زي ما هي.`
+          : `تفعيل "${s.name}" تاني؟`
+      )
+    )
+      return;
+    update(
+      "suppliers",
+      data.suppliers.map((x) => (x.id === s.id ? { ...x, is_active: !x.is_active } : x))
+    );
+    toast(s.is_active ? "تم إيقاف المورد" : "تم تفعيل المورد");
   };
   const getBalance = (id) => getPartyBalance(data, "supplier", id);
   const invoiceCount = (id) => data.invoices.filter((i) => i.supplier_id === id).length;
@@ -229,6 +254,9 @@ export function Suppliers({ data, update, toast, org, lang }) {
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>
                       {t("actions", "edit", lang)}
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => toggleActive(s)}>
+                      {s.is_active ? "إيقاف" : "تفعيل"}
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={() => del(s.id)}>
                       {t("actions", "delete", lang)}
