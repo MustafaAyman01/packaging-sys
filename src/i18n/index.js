@@ -148,7 +148,7 @@ export const STRINGS = {
     unpaid_purchases: { ar: "مشتريات لم تُسدد", en: "Unpaid Purchases" },
     all_expenses: { ar: "كل المصروفات", en: "All Expenses" },
     total_disbursed: { ar: "إجمالي ما تم صرفه", en: "Total Disbursed" },
-    after_purch_exp: { ar: "بعد المشتريات والمصروفات", en: "After Purchases & Expenses" },
+    after_purch_exp: { ar: "بعد المشتريات والمصروفات والسندات", en: "After Purchases, Expenses & Vouchers" },
     need_reorder: { ar: "تحتاج إعادة طلب", en: "Needs Reorder" },
     invoice_word: { ar: "فاتورة", en: "invoices" },
     order_word: { ar: "أمر", en: "orders" },

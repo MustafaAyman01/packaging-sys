@@ -30,7 +30,21 @@ export function Dashboard({ data, setPage, getStockQty, lang }) {
   const mfgOrders = data.manufacturing_orders || [];
   const totalManufacturingCosts = mfgOrders.reduce((s, o) => s + (o.expenses_total || 0), 0);
 
-  const netProfit = totalSales - totalPurchases - totalExpenses - totalManufacturingCosts;
+  // بنحسب سندات القبض والصرف كمان عشان صافي الربح هنا يتفق مع نفس المعادلة
+  // المستخدمة في صفحة التقارير (كانا بيختلفوا، وده كان بيدي رقمين مختلفين لنفس الشيء)
+  const totalVoucherReceipts = (data.cash_vouchers || [])
+    .filter((v) => v.type === "receipt")
+    .reduce((s, v) => s + v.amount, 0);
+  const totalVoucherPayments = (data.cash_vouchers || [])
+    .filter((v) => v.type === "payment")
+    .reduce((s, v) => s + v.amount, 0);
+  const netProfit =
+    totalSales -
+    totalPurchases -
+    totalExpenses -
+    totalManufacturingCosts +
+    totalVoucherReceipts -
+    totalVoucherPayments;
 
   const activeProducts = data.products.filter((p) => p.is_active);
   const lowStock = activeProducts.filter((p) => getStockQty(p.id) < p.min_stock_level);
