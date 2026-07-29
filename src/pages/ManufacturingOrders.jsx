@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
+import { PartyPicker } from "../components/PartyPicker";
 import { generateId, fc, fd, today } from "../utils/format";
 import { t } from "../i18n";
 
@@ -16,10 +17,11 @@ const blankForm = () => ({
   material_quantity_used: "",
   output_product_id: "",
   output_quantity: "",
+  contractor_supplier_id: "",
   notes: "",
 });
 
-export function ManufacturingOrders({ data, update, updateStock, toast, lang }) {
+export function ManufacturingOrders({ data, update, updateStock, toast, lang, setPage }) {
   const orders = data.manufacturing_orders || [];
   const [showModal, setShowModal] = useState(false);
   const [viewOrder, setViewOrder] = useState(null);
@@ -109,9 +111,48 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
       output_product_id: form.output_product_id,
       output_quantity: outputQty,
       cost_per_unit: costPerUnit,
+      contractor_supplier_id: form.contractor_supplier_id || null,
+      contractor_invoice_id: null,
       notes: form.notes || "",
       created_at: today(),
     };
+
+    // لو محدد جهة مصنّعة (مورد) والمصاريف أكبر من صفر، بننشئلها فاتورة مشتريات
+    // فعلية بمصاريف التصنيع دي، عشان تتحسب كمديونية حقيقية عليك تقدر تسددها من
+    // صفحة المدفوعات زي أي مورد عادي — بدل ما تكون رقم معلّق من غير أي تتبع.
+    // المبلغ ده هيتحسب أوتوماتيك ضمن "إجمالي المشتريات" فيقلل صافي الربح من هناك،
+    // فمش هنجمعه تاني كـ"مصاريف تصنيع" منفصلة (عشان منضاعفش نفس التكلفة مرتين).
+    if (form.contractor_supplier_id && expensesTotal > 0 && validExpenses.length > 0) {
+      const contractorInvoice = {
+        id: generateId(),
+        type: "purchase",
+        invoice_number: `MFG-${newOrder.order_number}`,
+        invoice_date: newOrder.order_date,
+        due_date: newOrder.order_date,
+        supplier_id: form.contractor_supplier_id,
+        client_id: null,
+        status: "confirmed",
+        discount_amount: 0,
+        tax_rate: 0,
+        subtotal: expensesTotal,
+        total_amount: expensesTotal,
+        paid_amount: 0,
+        notes: `مصاريف تصنيع لأمر رقم ${newOrder.order_number}`,
+        items: validExpenses.map((e) => ({
+          id: generateId(),
+          product_id: null,
+          product_name: e.title,
+          product_sku: "",
+          quantity: 1,
+          unit_price: e.amount,
+          discount_percent: 0,
+          total_price: e.amount,
+        })),
+        created_at: new Date().toISOString(),
+      };
+      update("invoices", [...data.invoices, contractorInvoice]);
+      newOrder.contractor_invoice_id = contractorInvoice.id;
+    }
 
     update("manufacturing_orders", [...orders, newOrder]);
     // خصم الخامة المستخدمة من المخزون
@@ -129,9 +170,18 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
   };
 
   const deleteOrder = (order) => {
+    const linkedInvoice = order.contractor_invoice_id
+      ? data.invoices.find((i) => i.id === order.contractor_invoice_id)
+      : null;
+    if (linkedInvoice && linkedInvoice.paid_amount > 0) {
+      toast("⚠️ فيه فاتورة مصاريف تصنيع مرتبطة بالأمر ده وعليها دفعات مسجلة — لازم تلغي الدفعات أو الفاتورة الأول من صفحة الفواتير");
+      return;
+    }
     if (
       !confirm(
-        `هل تريد حذف أمر التصنيع "${order.order_number}"؟\nسيتم عكس أثره على المخزون (إعادة الخامة المستخدمة وخصم الكمية المنتجة)، لكن سعر تكلفة المنتج لن يرجع تلقائيًا لقيمته السابقة قبل هذا الأمر.`
+        `هل تريد حذف أمر التصنيع "${order.order_number}"؟\nسيتم عكس أثره على المخزون (إعادة الخامة المستخدمة وخصم الكمية المنتجة)${
+          linkedInvoice ? "، وحذف فاتورة مصاريف التصنيع المرتبطة به" : ""
+        }، لكن سعر تكلفة المنتج لن يرجع تلقائيًا لقيمته السابقة قبل هذا الأمر.`
       )
     )
       return;
@@ -139,6 +189,12 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
       "manufacturing_orders",
       orders.filter((o) => o.id !== order.id)
     );
+    if (linkedInvoice) {
+      update(
+        "invoices",
+        data.invoices.filter((i) => i.id !== linkedInvoice.id)
+      );
+    }
     updateStock(order.material_product_id, order.material_quantity_used);
     updateStock(order.output_product_id, -order.output_quantity);
     toast("تم حذف أمر التصنيع ✓");
@@ -170,6 +226,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
               <th>{t("common", "qty_produced", lang)}</th>
               <th>{t("common", "piece_cost", lang)}</th>
               <th>{t("common", "total_cost", lang)}</th>
+              <th>الجهة المصنّعة</th>
               <th />
             </tr>
           </thead>
@@ -220,6 +277,11 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
                     {fc(o.cost_per_unit)}
                   </td>
                   <td>{fc(o.total_cost)}</td>
+                  <td>
+                    {o.contractor_supplier_id
+                      ? data.suppliers.find((s) => s.id === o.contractor_supplier_id)?.name || "—"
+                      : "—"}
+                  </td>
                   <td>
                     <button
                       className="btn btn-danger btn-sm"
@@ -334,6 +396,35 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
               )}
 
               <div className="section-title">💸 بنود المصاريف</div>
+              <div
+                className="form-group"
+                style={{
+                  marginBottom: 12,
+                }}
+              >
+                <label>الجهة المصنّعة (اختياري)</label>
+                <PartyPicker
+                  parties={data.suppliers}
+                  value={form.contractor_supplier_id}
+                  onSelect={(id) =>
+                    setForm({
+                      ...form,
+                      contractor_supplier_id: id,
+                    })
+                  }
+                  placeholder="ابحث عن المصنع/المقاول اللي هيصنع الأمر ده..."
+                />
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text3)",
+                    marginTop: 6,
+                  }}
+                >
+                  لو حددت جهة، هيتحسبلها فاتورة مشتريات بإجمالي المصاريف تحت، وتقدر تسددها من صفحة المدفوعات
+                  زي أي مورد عادي.
+                </div>
+              </div>
               <table
                 className="inv-table"
                 style={{
@@ -533,6 +624,51 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
                 <span>إجمالي المصاريف</span>
                 <span>{fc(viewOrder.expenses_total)}</span>
               </div>
+              {viewOrder.contractor_supplier_id &&
+                (() => {
+                  const contractor = data.suppliers.find((s) => s.id === viewOrder.contractor_supplier_id);
+                  const contractorInvoice = data.invoices.find((i) => i.id === viewOrder.contractor_invoice_id);
+                  const remaining = contractorInvoice
+                    ? contractorInvoice.total_amount - contractorInvoice.paid_amount
+                    : 0;
+                  return (
+                    <div
+                      className="totals-row"
+                      style={{
+                        background: "var(--amber-bg)",
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <span>الجهة المصنّعة</span>
+                      <span>
+                        {contractor?.name || "—"}
+                        {contractorInvoice && remaining > 0.01 && (
+                          <span
+                            style={{
+                              color: "var(--amber)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {" "}
+                            — متبقي {fc(remaining)}
+                          </span>
+                        )}
+                        {contractorInvoice && remaining <= 0.01 && (
+                          <span
+                            style={{
+                              color: "var(--green)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {" "}
+                            — مسدد بالكامل
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })()}
               <div className="totals-row">
                 <span>إجمالي التكلفة</span>
                 <span>{fc(viewOrder.total_cost)}</span>
@@ -568,6 +704,17 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang }) 
               )}
             </div>
             <div className="modal-footer">
+              {viewOrder.contractor_supplier_id && setPage && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setPage("payments");
+                    setViewOrder(null);
+                  }}
+                >
+                  💰 دفع للمورد
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={() => setViewOrder(null)}>
                 {t("actions", "close", lang)}
               </button>

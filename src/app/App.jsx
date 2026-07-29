@@ -470,7 +470,14 @@ export function App({ features, session, profile, trialEndsAt }) {
       />
     ),
     manufacturing_orders: (
-      <ManufacturingOrders data={data} update={update} updateStock={updateStock} toast={toast} lang={lang} />
+      <ManufacturingOrders
+        data={data}
+        update={update}
+        updateStock={updateStock}
+        toast={toast}
+        lang={lang}
+        setPage={setPage}
+      />
     ),
     invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} lang={lang} />,
     clients: <Clients data={data} update={update} toast={toast} org={org} lang={lang} />,

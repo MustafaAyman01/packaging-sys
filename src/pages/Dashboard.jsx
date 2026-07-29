@@ -27,8 +27,12 @@ export function Dashboard({ data, setPage, getStockQty, lang }) {
   // تتخصم برضو من صافي الربح فعليًا لأنها مصروف نقدي حقيقي، مش مجرد رقم تقييم مخزون.
   // ملحوظة: بنجمع expenses_total بس مش material_cost_total، لأن تكلفة الخامة
   // نفسها اتخصمت أصلاً مرة واحدة ضمن "إجمالي المشتريات" وقت شرائها.
+  // ولو الأمر ليه جهة مصنّعة (مورد) وليه فاتورة مشتريات مرتبطة، بقى المبلغ ده
+  // بيتخصم أصلاً من خلال "إجمالي المشتريات"، فمنجمعوش هنا تاني عشان منضاعفش نفس التكلفة.
   const mfgOrders = data.manufacturing_orders || [];
-  const totalManufacturingCosts = mfgOrders.reduce((s, o) => s + (o.expenses_total || 0), 0);
+  const totalManufacturingCosts = mfgOrders
+    .filter((o) => !o.contractor_invoice_id)
+    .reduce((s, o) => s + (o.expenses_total || 0), 0);
 
   // بنحسب سندات القبض والصرف كمان عشان صافي الربح هنا يتفق مع نفس المعادلة
   // المستخدمة في صفحة التقارير (كانا بيختلفوا، وده كان بيدي رقمين مختلفين لنفس الشيء)
