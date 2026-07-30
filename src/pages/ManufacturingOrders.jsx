@@ -8,6 +8,7 @@ const emptyExpenseRow = () => ({
   id: generateId(),
   title: "",
   amount: "",
+  toContractor: true,
 });
 
 const blankForm = () => ({
@@ -25,6 +26,10 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
   const orders = data.manufacturing_orders || [];
   const [showModal, setShowModal] = useState(false);
   const [viewOrder, setViewOrder] = useState(null);
+  const [addingExpense, setAddingExpense] = useState(false);
+  const [newExpenseTitle, setNewExpenseTitle] = useState("");
+  const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpenseToContractor, setNewExpenseToContractor] = useState(true);
   const [form, setForm] = useState(blankForm());
   const [expenseItems, setExpenseItems] = useState([emptyExpenseRow()]);
 
@@ -95,7 +100,12 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
         id: e.id,
         title: e.title.trim(),
         amount: +e.amount,
+        toContractor: form.contractor_supplier_id ? !!e.toContractor : false,
       }));
+    // بنفصل بنود المصاريف: اللي على الجهة المصنّعة بيروحوا لفاتورة مشتريات ليها،
+    // واللي "مصروف عام" (زي الشحن) بيتسجلوا كمصروفات عادية مش مرتبطة بأي مورد
+    const contractorExpenses = validExpenses.filter((e) => e.toContractor);
+    const generalExpenses = validExpenses.filter((e) => !e.toContractor);
 
     const newOrder = {
       id: generateId(),
@@ -113,16 +123,17 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
       cost_per_unit: costPerUnit,
       contractor_supplier_id: form.contractor_supplier_id || null,
       contractor_invoice_id: null,
+      costs_externally_recorded: true,
       notes: form.notes || "",
       created_at: today(),
     };
 
-    // لو محدد جهة مصنّعة (مورد) والمصاريف أكبر من صفر، بننشئلها فاتورة مشتريات
-    // فعلية بمصاريف التصنيع دي، عشان تتحسب كمديونية حقيقية عليك تقدر تسددها من
+    // لو محدد جهة مصنّعة (مورد) وفيه بنود متحسبة عليها، بننشئلها فاتورة مشتريات
+    // فعلية بالبنود دي بس، عشان تتحسب كمديونية حقيقية عليك تقدر تسددها من
     // صفحة المدفوعات زي أي مورد عادي — بدل ما تكون رقم معلّق من غير أي تتبع.
-    // المبلغ ده هيتحسب أوتوماتيك ضمن "إجمالي المشتريات" فيقلل صافي الربح من هناك،
-    // فمش هنجمعه تاني كـ"مصاريف تصنيع" منفصلة (عشان منضاعفش نفس التكلفة مرتين).
-    if (form.contractor_supplier_id && expensesTotal > 0 && validExpenses.length > 0) {
+    // المبلغ ده هيتحسب أوتوماتيك ضمن "إجمالي المشتريات" فيقلل صافي الربح من هناك.
+    if (form.contractor_supplier_id && contractorExpenses.length > 0) {
+      const contractorInvoiceAmount = contractorExpenses.reduce((s, e) => s + e.amount, 0);
       const contractorInvoice = {
         id: generateId(),
         type: "purchase",
@@ -134,11 +145,11 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
         status: "confirmed",
         discount_amount: 0,
         tax_rate: 0,
-        subtotal: expensesTotal,
-        total_amount: expensesTotal,
+        subtotal: contractorInvoiceAmount,
+        total_amount: contractorInvoiceAmount,
         paid_amount: 0,
         notes: `مصاريف تصنيع لأمر رقم ${newOrder.order_number}`,
-        items: validExpenses.map((e) => ({
+        items: contractorExpenses.map((e) => ({
           id: generateId(),
           product_id: null,
           product_name: e.title,
@@ -152,6 +163,20 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
       };
       update("invoices", [...data.invoices, contractorInvoice]);
       newOrder.contractor_invoice_id = contractorInvoice.id;
+    }
+
+    // البنود "مصروف عام" (زي الشحن) بتتسجل كمصروفات عادية مش مرتبطة بأي مورد،
+    // فتظهر في صفحة المصروفات وتتحسب ضمن إجمالي المصروفات العادي تلقائيًا
+    if (generalExpenses.length > 0) {
+      const newExpenseRecords = generalExpenses.map((e) => ({
+        id: generateId(),
+        title: `${e.title} — أمر تصنيع ${newOrder.order_number}`,
+        amount: e.amount,
+        expense_date: newOrder.order_date,
+        category: "تصنيع",
+        created_at: new Date().toISOString(),
+      }));
+      update("expenses", [...data.expenses, ...newExpenseRecords]);
     }
 
     update("manufacturing_orders", [...orders, newOrder]);
@@ -169,6 +194,125 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
     toast("تم حفظ أمر التصنيع، وتحديث المخزون وسعر تكلفة المنتج ✓");
   };
 
+  // بيضيف بند مصروف لأمر تصنيع محفوظ بالفعل، من غير ما يلمس المخزون خالص —
+  // بيحدّث بس إجمالي التكلفة وسعر تكلفة الوحدة، وبيوجّه البند لفاتورة المورد
+  // أو لمصروف عام حسب اختيارك
+  const addExpenseToOrder = (order) => {
+    const amount = +newExpenseAmount;
+    if (!newExpenseTitle.trim() || !amount || amount <= 0) {
+      toast("⚠️ ادخل اسم ومبلغ البند");
+      return;
+    }
+    const toContractor = order.contractor_supplier_id ? newExpenseToContractor : false;
+    const newItem = {
+      id: generateId(),
+      title: newExpenseTitle.trim(),
+      amount,
+      toContractor,
+    };
+    const updatedItems = [...(order.expense_items || []), newItem];
+    const newExpensesTotal = (order.expenses_total || 0) + amount;
+    const newTotalCost = (order.material_cost_total || 0) + newExpensesTotal;
+    const newCostPerUnit = order.output_quantity > 0 ? newTotalCost / order.output_quantity : 0;
+
+    let updatedOrder = {
+      ...order,
+      expense_items: updatedItems,
+      expenses_total: newExpensesTotal,
+      total_cost: newTotalCost,
+      cost_per_unit: newCostPerUnit,
+      costs_externally_recorded: true,
+    };
+
+    if (toContractor) {
+      const existingInvoice = order.contractor_invoice_id
+        ? data.invoices.find((i) => i.id === order.contractor_invoice_id)
+        : null;
+      if (existingInvoice) {
+        const updatedInvoice = {
+          ...existingInvoice,
+          items: [
+            ...(existingInvoice.items || []),
+            {
+              id: generateId(),
+              product_id: null,
+              product_name: newItem.title,
+              product_sku: "",
+              quantity: 1,
+              unit_price: amount,
+              discount_percent: 0,
+              total_price: amount,
+            },
+          ],
+          total_amount: existingInvoice.total_amount + amount,
+          subtotal: (existingInvoice.subtotal || 0) + amount,
+        };
+        update(
+          "invoices",
+          data.invoices.map((i) => (i.id === existingInvoice.id ? updatedInvoice : i))
+        );
+      } else {
+        const newInvoice = {
+          id: generateId(),
+          type: "purchase",
+          invoice_number: `MFG-${order.order_number}-${generateId().slice(0, 4)}`,
+          invoice_date: today(),
+          due_date: today(),
+          supplier_id: order.contractor_supplier_id,
+          client_id: null,
+          status: "confirmed",
+          discount_amount: 0,
+          tax_rate: 0,
+          subtotal: amount,
+          total_amount: amount,
+          paid_amount: 0,
+          notes: `مصاريف تصنيع إضافية لأمر رقم ${order.order_number}`,
+          items: [
+            {
+              id: generateId(),
+              product_id: null,
+              product_name: newItem.title,
+              product_sku: "",
+              quantity: 1,
+              unit_price: amount,
+              discount_percent: 0,
+              total_price: amount,
+            },
+          ],
+          created_at: new Date().toISOString(),
+        };
+        update("invoices", [...data.invoices, newInvoice]);
+        updatedOrder.contractor_invoice_id = newInvoice.id;
+      }
+    } else {
+      const newExpenseRecord = {
+        id: generateId(),
+        title: `${newItem.title} — أمر تصنيع ${order.order_number}`,
+        amount,
+        expense_date: today(),
+        category: "تصنيع",
+        created_at: new Date().toISOString(),
+      };
+      update("expenses", [...data.expenses, newExpenseRecord]);
+    }
+
+    update(
+      "manufacturing_orders",
+      orders.map((o) => (o.id === order.id ? updatedOrder : o))
+    );
+    // تحديث سعر تكلفة المنتج النهائي بالتكلفة الجديدة بعد إضافة البند
+    update(
+      "products",
+      data.products.map((p) => (p.id === order.output_product_id ? { ...p, cost_price: newCostPerUnit } : p))
+    );
+
+    setNewExpenseTitle("");
+    setNewExpenseAmount("");
+    setNewExpenseToContractor(true);
+    setAddingExpense(false);
+    setViewOrder(updatedOrder);
+    toast("تم إضافة بند المصروف وتحديث التكلفة ✓");
+  };
   const deleteOrder = (order) => {
     const linkedInvoice = order.contractor_invoice_id
       ? data.invoices.find((i) => i.id === order.contractor_invoice_id)
@@ -435,6 +579,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                   <tr>
                     <th>{t("common", "item", lang)}</th>
                     <th>{t("common", "amount_egp", lang)}</th>
+                    {form.contractor_supplier_id && <th>يتحسب على</th>}
                     <th />
                   </tr>
                 </thead>
@@ -444,14 +589,14 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                       <td>
                         <input
                           type="text"
-                          placeholder="مثال: مغسلة، قص..."
+                          placeholder="مثال: مغسلة، قص، شحن..."
                           value={e.title}
                           onChange={(ev) => updateExpenseRow(e.id, "title", ev.target.value)}
                         />
                       </td>
                       <td
                         style={{
-                          width: "30%",
+                          width: "25%",
                         }}
                       >
                         <input
@@ -461,6 +606,21 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                           onChange={(ev) => updateExpenseRow(e.id, "amount", ev.target.value)}
                         />
                       </td>
+                      {form.contractor_supplier_id && (
+                        <td
+                          style={{
+                            width: "22%",
+                          }}
+                        >
+                          <select
+                            value={e.toContractor ? "contractor" : "general"}
+                            onChange={(ev) => updateExpenseRow(e.id, "toContractor", ev.target.value === "contractor")}
+                          >
+                            <option value="contractor">الجهة المصنّعة</option>
+                            <option value="general">مصروف عام</option>
+                          </select>
+                        </td>
+                      )}
                       <td>
                         <button className="btn btn-danger btn-sm" onClick={() => removeExpenseRow(e.id)}>
                           ✕
@@ -470,6 +630,19 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                   ))}
                 </tbody>
               </table>
+              {form.contractor_supplier_id && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text3)",
+                    marginTop: -8,
+                    marginBottom: 12,
+                  }}
+                >
+                  البنود اللي هتحطها "مصروف عام" (زي الشحن) مش هتتحسب على الجهة المصنّعة، هتتسجل كمصروف عادي بس
+                  برضو هتدخل في تكلفة المنتج.
+                </div>
+              )}
               <button
                 className="btn btn-secondary btn-sm"
                 style={{
@@ -582,7 +755,12 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">تفاصيل أمر التصنيع {viewOrder.order_number}</span>
-              <button className="close-btn" onClick={() => setViewOrder(null)}>
+              <button className="close-btn" onClick={() => {
+                  setViewOrder(null);
+                  setAddingExpense(false);
+                  setNewExpenseTitle("");
+                  setNewExpenseAmount("");
+                }}>
                 ×
               </button>
             </div>
@@ -616,7 +794,20 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
               )}
               {(viewOrder.expense_items || []).map((e) => (
                 <div className="totals-row" key={e.id}>
-                  <span>{e.title}</span>
+                  <span>
+                    {e.title}
+                    {viewOrder.contractor_supplier_id && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "var(--text3)",
+                          marginRight: 6,
+                        }}
+                      >
+                        ({e.toContractor ? "على الجهة المصنّعة" : "مصروف عام"})
+                      </span>
+                    )}
+                  </span>
                   <span>{fc(e.amount)}</span>
                 </div>
               ))}
@@ -624,6 +815,80 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                 <span>إجمالي المصاريف</span>
                 <span>{fc(viewOrder.expenses_total)}</span>
               </div>
+              {!addingExpense ? (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    marginBottom: 12,
+                  }}
+                  onClick={() => setAddingExpense(true)}
+                >
+                  ➕ إضافة بند مصروف
+                </button>
+              ) : (
+                <div
+                  className="card"
+                  style={{
+                    padding: 12,
+                    marginBottom: 12,
+                    background: "var(--surface2)",
+                  }}
+                >
+                  <div className="form-row form-row-2">
+                    <div className="form-group">
+                      <label>اسم البند</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: شحن"
+                        value={newExpenseTitle}
+                        onChange={(e) => setNewExpenseTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{t("common", "amount_egp", lang)}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newExpenseAmount}
+                        onChange={(e) => setNewExpenseAmount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {viewOrder.contractor_supplier_id && (
+                    <div className="form-group">
+                      <label>يتحسب على</label>
+                      <select
+                        value={newExpenseToContractor ? "contractor" : "general"}
+                        onChange={(e) => setNewExpenseToContractor(e.target.value === "contractor")}
+                      >
+                        <option value="contractor">الجهة المصنّعة</option>
+                        <option value="general">مصروف عام</option>
+                      </select>
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      marginTop: 8,
+                    }}
+                  >
+                    <button className="btn btn-primary btn-sm" onClick={() => addExpenseToOrder(viewOrder)}>
+                      {t("actions", "confirm", lang)}
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setAddingExpense(false);
+                        setNewExpenseTitle("");
+                        setNewExpenseAmount("");
+                      }}
+                    >
+                      {t("actions", "cancel", lang)}
+                    </button>
+                  </div>
+                </div>
+              )}
               {viewOrder.contractor_supplier_id &&
                 (() => {
                   const contractor = data.suppliers.find((s) => s.id === viewOrder.contractor_supplier_id);
@@ -691,6 +956,7 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                   {fc(viewOrder.cost_per_unit)}
                 </span>
               </div>
+
               {viewOrder.notes && (
                 <div
                   style={{
@@ -715,7 +981,12 @@ export function ManufacturingOrders({ data, update, updateStock, toast, lang, se
                   💰 دفع للمورد
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={() => setViewOrder(null)}>
+              <button className="btn btn-secondary" onClick={() => {
+                  setViewOrder(null);
+                  setAddingExpense(false);
+                  setNewExpenseTitle("");
+                  setNewExpenseAmount("");
+                }}>
                 {t("actions", "close", lang)}
               </button>
             </div>

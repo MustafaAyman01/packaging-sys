@@ -107,14 +107,14 @@ export function Reports({ data, getStockQty, org, lang }) {
   const sum = (arr, key) => arr.reduce((s, x) => s + (x[key] || 0), 0);
   // مصاريف التصنيع (مغسلة، قص، خياطة...) — مصروف نقدي حقيقي لازم يتخصم من صافي الربح
   // برضو، مش بس يزوّد تكلفة تقييم المخزون. متجمعوش مع تكلفة الخامة لأنها اتخصمت
-  // أصلاً مرة واحدة ضمن المشتريات وقت شرائها. وبرضو مستبعدين الأوامر اللي ليها
-  // فاتورة مشتريات لجهة مصنّعة، لأن تكلفتها بقت متحسوبة أصلاً من خلال المشتريات.
+  // أصلاً مرة واحدة ضمن المشتريات وقت شرائها. وبرضو مستبعدين الأوامر اللي اتسجلت
+  // تكلفتها فعلاً من خلال فاتورة مشتريات و/أو مصروفات عادية (costs_externally_recorded).
   const mfgCur = (data.manufacturing_orders || [])
     .filter((o) => inRange(o.order_date, range))
-    .filter((o) => !o.contractor_invoice_id);
+    .filter((o) => !o.costs_externally_recorded && !o.contractor_invoice_id);
   const mfgPrev = (data.manufacturing_orders || [])
     .filter((o) => inRange(o.order_date, prevRange))
-    .filter((o) => !o.contractor_invoice_id);
+    .filter((o) => !o.costs_externally_recorded && !o.contractor_invoice_id);
   const totalMfgCostsCur = sum(mfgCur, "expenses_total");
   const totalMfgCostsPrev = sum(mfgPrev, "expenses_total");
   const pct = (cur, prev) => {

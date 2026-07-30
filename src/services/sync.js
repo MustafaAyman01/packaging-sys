@@ -81,6 +81,7 @@ export const SYNC_TABLES = {
       "cost_per_unit",
       "contractor_supplier_id",
       "contractor_invoice_id",
+      "costs_externally_recorded",
       "notes",
       "created_at",
     ],
