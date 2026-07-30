@@ -79,6 +79,8 @@ export const SYNC_TABLES = {
       "output_product_id",
       "output_quantity",
       "cost_per_unit",
+      "contractor_supplier_id",
+      "contractor_invoice_id",
       "notes",
       "created_at",
     ],
