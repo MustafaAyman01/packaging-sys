@@ -50,11 +50,11 @@ export const SYNC_TABLES = {
   },
   clients: {
     table: "clients",
-    fields: ["name", "phone", "email", "address", "tax_number", "type", "is_active"],
+    fields: ["name", "phone", "email", "address", "tax_number", "type", "credit_limit", "is_active"],
   },
   suppliers: {
     table: "suppliers",
-    fields: ["name", "phone", "email", "address", "tax_number", "is_active"],
+    fields: ["name", "phone", "email", "address", "tax_number", "credit_limit", "is_active"],
   },
   stock_levels: {
     table: "stock_levels",

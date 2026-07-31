@@ -26,6 +26,7 @@ export function Clients({ data, update, toast, org, lang }) {
       address: "",
       tax_number: "",
       type: "retail",
+      credit_limit: "",
       is_active: true,
     });
     setShowModal(true);
@@ -47,13 +48,17 @@ export function Clients({ data, update, toast, org, lang }) {
       toast(`⚠️ فيه عميل مسجل بالفعل بنفس الاسم ("${dup.name}") — استخدم السجل الموجود بدل ما تضيف واحد جديد`);
       return;
     }
+    const cleanedForm = {
+      ...form,
+      credit_limit: form.credit_limit === "" || form.credit_limit == null ? null : +form.credit_limit,
+    };
     if (editing)
       update(
         "clients",
         data.clients.map((c) =>
           c.id === editing.id
             ? {
-                ...form,
+                ...cleanedForm,
                 id: editing.id,
               }
             : c
@@ -63,7 +68,7 @@ export function Clients({ data, update, toast, org, lang }) {
       update("clients", [
         ...data.clients,
         {
-          ...form,
+          ...cleanedForm,
           id: generateId(),
           created_at: today(),
         },
@@ -245,6 +250,17 @@ export function Clients({ data, update, toast, org, lang }) {
                   }}
                 >
                   {fc(getBalance(c.id))}
+                  {c.credit_limit && getBalance(c.id) > c.credit_limit && (
+                    <span
+                      title={`تخطى الحد الأقصى (${fc(c.credit_limit)})`}
+                      style={{
+                        marginRight: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      ⚠️
+                    </span>
+                  )}
                 </td>
                 <td>
                   <span
@@ -357,6 +373,23 @@ export function Clients({ data, update, toast, org, lang }) {
                       setForm({
                         ...form,
                         email: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>الحد الأقصى للمديونية (اختياري)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="اتركه فاضي لعدم وجود حد"
+                    value={form.credit_limit ?? ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        credit_limit: e.target.value,
                       })
                     }
                   />

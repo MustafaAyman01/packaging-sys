@@ -24,6 +24,7 @@ export function Suppliers({ data, update, toast, org, lang }) {
       email: "",
       address: "",
       tax_number: "",
+      credit_limit: "",
       is_active: true,
     });
     setShowModal(true);
@@ -45,13 +46,17 @@ export function Suppliers({ data, update, toast, org, lang }) {
       toast(`⚠️ فيه مورد مسجل بالفعل بنفس الاسم ("${dup.name}") — استخدم السجل الموجود بدل ما تضيف واحد جديد`);
       return;
     }
+    const cleanedForm = {
+      ...form,
+      credit_limit: form.credit_limit === "" || form.credit_limit == null ? null : +form.credit_limit,
+    };
     if (editing)
       update(
         "suppliers",
         data.suppliers.map((s) =>
           s.id === editing.id
             ? {
-                ...form,
+                ...cleanedForm,
                 id: editing.id,
               }
             : s
@@ -61,7 +66,7 @@ export function Suppliers({ data, update, toast, org, lang }) {
       update("suppliers", [
         ...data.suppliers,
         {
-          ...form,
+          ...cleanedForm,
           id: generateId(),
           created_at: today(),
         },
@@ -235,6 +240,17 @@ export function Suppliers({ data, update, toast, org, lang }) {
                   }}
                 >
                   {fc(getBalance(s.id))}
+                  {s.credit_limit && getBalance(s.id) > s.credit_limit && (
+                    <span
+                      title={`تخطى الحد الأقصى (${fc(s.credit_limit)})`}
+                      style={{
+                        marginRight: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      ⚠️
+                    </span>
+                  )}
                 </td>
                 <td>
                   <span
@@ -345,6 +361,21 @@ export function Suppliers({ data, update, toast, org, lang }) {
                     }
                   />
                 </div>
+              </div>
+              <div className="form-group">
+                <label>الحد الأقصى للمديونية عليك (اختياري)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="اتركه فاضي لعدم وجود حد"
+                  value={form.credit_limit ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      credit_limit: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="form-group">
                 <label>العنوان</label>

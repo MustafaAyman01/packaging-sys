@@ -60,7 +60,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     if (SUPABASE_ENABLED && profile) {
       sb.from("organizations")
         .select(
-          "id,name,name_ar,logo_url,address,phone,whatsapp_phone,tax_number,show_address_on_invoice,show_phone_on_invoice,show_whatsapp_on_invoice,show_tax_number_on_invoice"
+          "id,name,name_ar,logo_url,address,phone,whatsapp_phone,tax_number,show_address_on_invoice,show_phone_on_invoice,show_whatsapp_on_invoice,show_tax_number_on_invoice,max_total_payables"
         )
         .eq("id", profile.org_id)
         .single()

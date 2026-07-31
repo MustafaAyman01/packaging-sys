@@ -21,6 +21,7 @@ export function Settings({ profile, toast, lang }) {
   const [showPhone, setShowPhone] = useState(true);
   const [showWhatsapp, setShowWhatsapp] = useState(true);
   const [showTaxNumber, setShowTaxNumber] = useState(true);
+  const [maxTotalPayables, setMaxTotalPayables] = useState("");
   // new user form
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -48,6 +49,7 @@ export function Settings({ profile, toast, lang }) {
     setShowPhone(orgRes.data?.show_phone_on_invoice ?? true);
     setShowWhatsapp(orgRes.data?.show_whatsapp_on_invoice ?? true);
     setShowTaxNumber(orgRes.data?.show_tax_number_on_invoice ?? true);
+    setMaxTotalPayables(orgRes.data?.max_total_payables ?? "");
     setMembers(profsRes.data || []);
     setLoading(false);
   };
@@ -97,6 +99,7 @@ export function Settings({ profile, toast, lang }) {
         p_show_phone: showPhone,
         p_show_whatsapp: showWhatsapp,
         p_show_tax_number: showTaxNumber,
+        p_max_total_payables: maxTotalPayables === "" ? null : +maxTotalPayables,
       });
       if (detailsError) {
         console.error("update_organization_details error:", detailsError);
@@ -363,6 +366,26 @@ export function Settings({ profile, toast, lang }) {
                   />
                   يظهر في الفاتورة
                 </label>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>الحد الأقصى لإجمالي مديونيتك على كل الموردين (اختياري)</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="اتركه فاضي لعدم وجود حد"
+                value={maxTotalPayables}
+                onChange={(e) => setMaxTotalPayables(e.target.value)}
+                disabled={!canManage}
+              />
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--text3)",
+                  marginTop: 6,
+                }}
+              >
+                لو مجموع مديونيتك على كل الموردين هيتخطى الرقم ده بعد فاتورة مشتريات جديدة، هيديك تحذير قبل الحفظ.
               </div>
             </div>
             {canManage && (

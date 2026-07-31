@@ -7,6 +7,7 @@ import { generateId, fc, fd, today } from "../utils/format";
 import { STATUS_LABELS, TYPE_LABELS, PAYMENT_METHODS } from "../constants/labels";
 import { fetchNextInvoiceNumber } from "../services/sync";
 import { t } from "../i18n";
+import { getPartyBalance } from "../utils/balance";
 
 export function Invoices({ data, update, updateStock, toast, org, lang }) {
   const [search, setSearch] = useState("");
@@ -186,6 +187,70 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
     setSaving(true);
     try {
       const totals = calcTotals(items, form.discount_amount, form.tax_rate);
+      // تحذير الحد الأقصى للمديونية — بس لفواتير جديدة (مش تعديل) عشان منزعجش
+      // المستخدم كل مرة يفتح فاتورة قديمة كانت أصلاً فوق الحد وقت إنشائها
+      if (!isEdit) {
+        if (form.type === "sale" && form.client_id) {
+          const client = data.clients.find((c) => c.id === form.client_id);
+          if (client?.credit_limit) {
+            const currentBalance = getPartyBalance(data, "client", form.client_id);
+            const projected = currentBalance + totals.total_amount;
+            if (projected > client.credit_limit) {
+              if (
+                !confirm(
+                  `⚠️ الفاتورة دي هتخلي رصيد "${client.name}" ${fc(projected)}، وده أكبر من الحد الأقصى المسموح ليه (${fc(
+                    client.credit_limit
+                  )}). متأكد إنك عايز تكمل؟`
+                )
+              ) {
+                setSaving(false);
+                return;
+              }
+            }
+          }
+        }
+        if (form.type === "purchase" && form.supplier_id) {
+          const supplier = data.suppliers.find((s) => s.id === form.supplier_id);
+          if (supplier?.credit_limit) {
+            const currentBalance = getPartyBalance(data, "supplier", form.supplier_id);
+            const projected = currentBalance + totals.total_amount;
+            if (projected > supplier.credit_limit) {
+              if (
+                !confirm(
+                  `⚠️ الفاتورة دي هتخلي مديونيتك عند "${supplier.name}" ${fc(
+                    projected
+                  )}، وده أكبر من الحد الأقصى اللي حددته له (${fc(supplier.credit_limit)}). متأكد إنك عايز تكمل؟`
+                )
+              ) {
+                setSaving(false);
+                return;
+              }
+            }
+          }
+          // الحد الأقصى العام لإجمالي مديونيتك على كل الموردين مع بعض
+          if (org?.max_total_payables) {
+            const totalPayablesNow = data.suppliers.reduce(
+              (s, sup) => s + Math.max(0, getPartyBalance(data, "supplier", sup.id)),
+              0
+            );
+            const projectedTotal = totalPayablesNow + totals.total_amount;
+            if (projectedTotal > org.max_total_payables) {
+              if (
+                !confirm(
+                  `⚠️ الفاتورة دي هتخلي إجمالي مديونيتك على كل الموردين ${fc(
+                    projectedTotal
+                  )}، وده أكبر من الحد الأقصى العام اللي حددته لنفسك (${fc(
+                    org.max_total_payables
+                  )}). متأكد إنك عايز تكمل؟`
+                )
+              ) {
+                setSaving(false);
+                return;
+              }
+            }
+          }
+        }
+      }
       const invoiceItems = items
         .filter((i) => i.product_id)
         .map((i) => {
