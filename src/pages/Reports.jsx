@@ -7,6 +7,7 @@ import { t } from "../i18n";
 export function Reports({ data, getStockQty, org, lang }) {
   const [tab, setTab] = useState("kpi");
   const [period, setPeriod] = useState("month");
+  const [productSort, setProductSort] = useState("revenue"); // "revenue" | "profit"
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
@@ -215,7 +216,7 @@ export function Reports({ data, getStockQty, org, lang }) {
         profit: p.revenue - p.soldQty * p.cost_price,
       }))
       .filter((p) => p.soldQty > 0)
-      .sort((a, b) => b.revenue - a.revenue);
+      .sort((a, b) => (productSort === "profit" ? b.profit - a.profit : b.revenue - a.revenue));
   })();
   const clientSales = data.clients
     .map((c) => {
@@ -686,12 +687,41 @@ export function Reports({ data, getStockQty, org, lang }) {
         <div>
           <div
             style={{
-              fontSize: 12,
-              color: "var(--text3)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: 12,
+              flexWrap: "wrap",
+              gap: 8,
             }}
           >
-            يعرض المنتجات المباعة في الفترة المختارة
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--text3)",
+              }}
+            >
+              يعرض المنتجات المباعة في الفترة المختارة
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+              }}
+            >
+              <button
+                className={`btn btn-sm ${productSort === "revenue" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setProductSort("revenue")}
+              >
+                الأعلى مبيعًا
+              </button>
+              <button
+                className={`btn btn-sm ${productSort === "profit" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setProductSort("profit")}
+              >
+                الأعلى ربحًا
+              </button>
+            </div>
           </div>
           <div className="card">
             <table>
