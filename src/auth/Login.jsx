@@ -136,16 +136,6 @@ export function Login({ onLogin }) {
             style={{
               textAlign: "center",
               marginTop: 18,
-              fontSize: 12.5,
-              color: "var(--text3)",
-            }}
-          >
-            للحصول على حساب، يرجى التواصل مع مزوّد النظام.
-          </div>
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: 14,
               paddingTop: 14,
               borderTop: "1px dashed var(--border2, #ddd)",
               fontSize: 11,
