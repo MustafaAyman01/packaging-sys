@@ -12,6 +12,8 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org, lang
   const [stocktakeSearch, setStocktakeSearch] = useState("");
   const [movementsSearch, setMovementsSearch] = useState("");
   const [movementsTypeFilter, setMovementsTypeFilter] = useState("");
+  const [levelsSearch, setLevelsSearch] = useState("");
+  const [levelsStatusFilter, setLevelsStatusFilter] = useState("");
   const [form, setForm] = useState({
     product_id: "",
     movement_type: "in",
@@ -153,70 +155,120 @@ export function Stock({ data, update, getStockQty, updateStock, toast, org, lang
         </div>
       </div>
       {tab === "levels" && (
-        <div className="card">
-          <table>
-            <thead>
-              <tr>
-                <th>{t("common", "product", lang)}</th>
-                <th>{t("common", "code", lang)}</th>
-                <th>{t("common", "current_qty", lang)}</th>
-                <th>{t("common", "min_threshold", lang)}</th>
-                <th>{t("common", "status", lang)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.products
-                .filter((p) => p.is_active)
-                .map((p) => {
-                  const qty = getStockQty(p.id);
-                  const low = qty < p.min_stock_level;
-                  const unit = data.units.find((u) => u.id === p.unit_id);
-                  return (
-                    <tr key={p.id}>
-                      <td
-                        style={{
-                          fontWeight: 500,
-                        }}
-                      >
-                        {p.name}
-                      </td>
-                      <td>
-                        <code
+        <div>
+          <div
+            style={{
+              marginBottom: 16,
+              display: "flex",
+              gap: 12,
+              alignItems: "flex-end",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              className="form-group"
+              style={{
+                minWidth: 220,
+                marginBottom: 0,
+              }}
+            >
+              <label>بحث بالاسم أو الكود</label>
+              <input
+                value={levelsSearch}
+                onChange={(e) => setLevelsSearch(e.target.value)}
+                placeholder="اكتب اسم المنتج أو الكود..."
+              />
+            </div>
+            <div
+              className="form-group"
+              style={{
+                minWidth: 160,
+                marginBottom: 0,
+              }}
+            >
+              <label>الحالة</label>
+              <select value={levelsStatusFilter} onChange={(e) => setLevelsStatusFilter(e.target.value)}>
+                <option value="">الكل</option>
+                <option value="low">⚠️ مخزون منخفض بس</option>
+                <option value="normal">✓ طبيعي بس</option>
+              </select>
+            </div>
+          </div>
+          <div className="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t("common", "product", lang)}</th>
+                  <th>{t("common", "code", lang)}</th>
+                  <th>{t("common", "current_qty", lang)}</th>
+                  <th>{t("common", "min_threshold", lang)}</th>
+                  <th>{t("common", "status", lang)}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.products
+                  .filter((p) => p.is_active)
+                  .filter((p) => {
+                    if (!levelsSearch) return true;
+                    const q = levelsSearch.toLowerCase();
+                    return p.name.toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
+                  })
+                  .filter((p) => {
+                    if (!levelsStatusFilter) return true;
+                    const low = getStockQty(p.id) < p.min_stock_level;
+                    return levelsStatusFilter === "low" ? low : !low;
+                  })
+                  .map((p) => {
+                    const qty = getStockQty(p.id);
+                    const low = qty < p.min_stock_level;
+                    const unit = data.units.find((u) => u.id === p.unit_id);
+                    return (
+                      <tr key={p.id}>
+                        <td
                           style={{
-                            fontSize: 12,
+                            fontWeight: 500,
                           }}
                         >
-                          {p.sku}
-                        </code>
-                      </td>
-                      <td
-                        style={{
-                          fontWeight: 600,
-                          color: low ? "var(--red)" : "var(--green)",
-                          fontSize: 15,
-                        }}
-                      >
-                        {qty.toLocaleString()} {unit?.abbreviation}
-                      </td>
-                      <td>
-                        {p.min_stock_level.toLocaleString()} {unit?.abbreviation}
-                      </td>
-                      <td>
-                        <span
-                          className="badge"
+                          {p.name}
+                        </td>
+                        <td>
+                          <code
+                            style={{
+                              fontSize: 12,
+                            }}
+                          >
+                            {p.sku}
+                          </code>
+                        </td>
+                        <td
                           style={{
-                            background: low ? "var(--red-bg)" : "var(--green-bg)",
+                            fontWeight: 600,
                             color: low ? "var(--red)" : "var(--green)",
+                            fontSize: 15,
                           }}
                         >
-                          {low ? "⚠️ مخزون منخفض" : "✓ طبيعي"}
-                        </span>
-                      </td>
-                    </tr>
+                          {qty.toLocaleString()} {unit?.abbreviation}
+                        </td>
+                        <td>
+                          {p.min_stock_level.toLocaleString()} {unit?.abbreviation}
+                        </td>
+                        <td>
+                          <span
+                            className="badge"
+                            style={{
+                              background: low ? "var(--red-bg)" : "var(--green-bg)",
+                              color: low ? "var(--red)" : "var(--green)",
+                            }}
+                          >
+                            {low ? "⚠️ مخزون منخفض" : "✓ طبيعي"}
+                          </span>
+                        </td>
+                      </tr>
                   );
                 })}
             </tbody>
           </table>
+        </div>
         </div>
       )}
       {tab === "stocktake" && (
