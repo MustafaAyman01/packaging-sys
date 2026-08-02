@@ -13,6 +13,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [dueFilter, setDueFilter] = useState(""); // "" | "overdue" | "soon" | "sort_due"
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewInv, setViewInv] = useState(null);
@@ -25,6 +26,11 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
     reference_number: "",
     notes: "",
   });
+  const soonCutoff = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  })();
   const filtered = data.invoices
     .filter(
       (i) =>
@@ -35,10 +41,20 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
         (!typeFilter || i.type === typeFilter) &&
         (!statusFilter || i.status === statusFilter)
     )
-    .sort(
-      (a, b) =>
-        b.invoice_date.localeCompare(a.invoice_date) || (b.created_at || "").localeCompare(a.created_at || "")
-    );
+    .filter((i) => {
+      if (!dueFilter || dueFilter === "sort_due") return true;
+      const notSettled = !["paid", "cancelled"].includes(i.status);
+      if (!i.due_date || !notSettled) return false;
+      if (dueFilter === "overdue") return i.due_date < today();
+      if (dueFilter === "soon") return i.due_date >= today() && i.due_date <= soonCutoff;
+      return true;
+    })
+    .sort((a, b) => {
+      if (dueFilter === "sort_due" || dueFilter === "overdue" || dueFilter === "soon") {
+        return (a.due_date || "9999").localeCompare(b.due_date || "9999");
+      }
+      return b.invoice_date.localeCompare(a.invoice_date) || (b.created_at || "").localeCompare(a.created_at || "");
+    });
   const newInvNum = (type) => {
     const prefix = type === "sale" ? "INV" : "PUR";
     const year = new Date().getFullYear();
@@ -520,6 +536,18 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
             </option>
           ))}
         </select>
+        <select
+          value={dueFilter}
+          onChange={(e) => setDueFilter(e.target.value)}
+          style={{
+            width: 170,
+          }}
+        >
+          <option value="">كل مواعيد الاستحقاق</option>
+          <option value="overdue">⚠️ متأخرة عن الاستحقاق</option>
+          <option value="soon">⏳ قريبة الاستحقاق (٧ أيام)</option>
+          <option value="sort_due">↕️ ترتيب حسب الاستحقاق</option>
+        </select>
         <button className="btn btn-primary" onClick={() => openNew("sale")}>
           + فاتورة مبيعات
         </button>
@@ -550,6 +578,11 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                   ? data.clients.find((c) => c.id === inv.client_id)?.name
                   : data.suppliers.find((s) => s.id === inv.supplier_id)?.name;
               const overdue = inv.due_date < today() && !["paid", "cancelled"].includes(inv.status);
+              const dueSoon =
+                !overdue &&
+                inv.due_date &&
+                inv.due_date <= soonCutoff &&
+                !["paid", "cancelled"].includes(inv.status);
               const rowRemaining = Math.max(0, inv.total_amount - inv.paid_amount);
               return (
                 <tr
@@ -558,6 +591,10 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                     overdue
                       ? {
                           background: "var(--red-bg)",
+                        }
+                      : dueSoon
+                      ? {
+                          background: "var(--amber-bg)",
                         }
                       : {}
                   }
@@ -579,6 +616,17 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                         متأخر
                       </span>
                     )}
+                    {dueSoon && (
+                      <span
+                        style={{
+                          color: "var(--amber)",
+                          fontSize: 11,
+                          marginRight: 6,
+                        }}
+                      >
+                        قريب الاستحقاق
+                      </span>
+                    )}
                   </td>
                   <td>
                     <span className="tag">{TYPE_LABELS[inv.type]}</span>
@@ -587,7 +635,7 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                   <td>{fd(inv.invoice_date)}</td>
                   <td
                     style={{
-                      color: overdue ? "var(--red)" : "inherit",
+                      color: overdue ? "var(--red)" : dueSoon ? "var(--amber)" : "inherit",
                     }}
                   >
                     {fd(inv.due_date)}
