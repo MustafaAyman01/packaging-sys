@@ -44,27 +44,34 @@ export function Login({ onLogin }) {
       >
         <div
           style={{
-            background: "linear-gradient(135deg,#0f4c5c,#0a3540)",
+            background: "linear-gradient(135deg,var(--indigo,#2c3663),var(--indigo-deep,#191f3d))",
             padding: "32px 28px",
             textAlign: "center",
             color: "#fff",
           }}
         >
-          <div
+          <img
+            src="/unifra-logo.jpg"
+            alt="Unifra"
             style={{
-              fontSize: 40,
+              width: 64,
+              height: 64,
+              borderRadius: 12,
+              objectFit: "cover",
+              margin: "0 auto",
+              display: "block",
+              boxShadow: "0 4px 16px rgba(0,0,0,.25)",
             }}
-          >
-            👖
-          </div>
+          />
           <div
             style={{
               fontSize: 20,
               fontWeight: 700,
-              marginTop: 8,
+              marginTop: 12,
+              letterSpacing: "0.02em",
             }}
           >
-            مصنع الملابس
+            Unifra
           </div>
           <div
             style={{
@@ -73,7 +80,7 @@ export function Login({ onLogin }) {
               marginTop: 4,
             }}
           >
-            نظام إدارة مصنع الملابس
+            نظام إدارة موارد المصانع
           </div>
         </div>
         <div
@@ -134,6 +141,18 @@ export function Login({ onLogin }) {
             }}
           >
             للحصول على حساب، يرجى التواصل مع مزوّد النظام.
+          </div>
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 14,
+              paddingTop: 14,
+              borderTop: "1px dashed var(--border2, #ddd)",
+              fontSize: 11,
+              color: "var(--text3)",
+            }}
+          >
+            © {new Date().getFullYear()} Unifra ERP System — جميع الحقوق محفوظة
           </div>
         </div>
       </div>
