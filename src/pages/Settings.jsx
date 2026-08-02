@@ -221,6 +221,9 @@ export function Settings({ profile, toast, lang }) {
         <div className={`tab${tab === "profile" ? " active" : ""}`} onClick={() => setTab("profile")}>
           حسابي
         </div>
+        <div className={`tab${tab === "support" ? " active" : ""}`} onClick={() => setTab("support")}>
+          سياسة الدعم
+        </div>
       </div>
       {tab === "org" && (
         <div className="card">
@@ -573,6 +576,114 @@ export function Settings({ profile, toast, lang }) {
                 {t("actions", "save", lang)}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {tab === "support" && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">📋 سياسة الدعم — Unifra</span>
+          </div>
+          <div
+            className="card-body"
+            style={{
+              lineHeight: 1.9,
+              fontSize: 14.5,
+            }}
+          >
+            <div
+              className="alert alert-warning"
+              style={{
+                marginBottom: 20,
+              }}
+            >
+              دي نسخة أولى قياسية — عدّل فيها أي بند حسب اتفاقك الفعلي مع عملائك. النص ده مش عقد ملزم قانونيًا،
+              مجرد توضيح للمستخدم لطبيعة الدعم المتاح.
+            </div>
+
+            <h3
+              style={{
+                fontSize: 16,
+                marginBottom: 8,
+              }}
+            >
+              طرق التواصل
+            </h3>
+            <p
+              style={{
+                marginBottom: 16,
+                color: "var(--text2)",
+              }}
+            >
+              للدعم الفني أو أي استفسار، تواصل عبر واتساب
+              {org?.whatsapp_phone ? ` على ${org.whatsapp_phone}` : ""}
+              {org?.phone ? ` أو الاتصال على ${org.phone}` : ""}.
+            </p>
+
+            <h3
+              style={{
+                fontSize: 16,
+                marginBottom: 8,
+              }}
+            >
+              نطاق الدعم
+            </h3>
+            <p
+              style={{
+                marginBottom: 8,
+                color: "var(--text2)",
+              }}
+            >
+              يشمل الدعم:
+            </p>
+            <ul
+              style={{
+                marginBottom: 16,
+                paddingRight: 22,
+                color: "var(--text2)",
+              }}
+            >
+              <li>الإبلاغ عن مشاكل أو أخطاء في النظام وإصلاحها</li>
+              <li>الرد على استفسارات استخدام الشاشات المختلفة</li>
+              <li>مساعدة أساسية في استرجاع بيانات لو حصل خطأ إدخال</li>
+            </ul>
+            <p
+              style={{
+                marginBottom: 8,
+                color: "var(--text2)",
+              }}
+            >
+              مش يشمل الدعم (بيتفق عليه بشكل منفصل):
+            </p>
+            <ul
+              style={{
+                marginBottom: 16,
+                paddingRight: 22,
+                color: "var(--text2)",
+              }}
+            >
+              <li>تعديلات أو فيتشرز جديدة مخصصة</li>
+              <li>تدريب مكثف حضوري أو عن بُعد لفريق كامل</li>
+              <li>ربط النظام بأنظمة خارجية غير متفق عليها مسبقًا</li>
+            </ul>
+
+            <h3
+              style={{
+                fontSize: 16,
+                marginBottom: 8,
+              }}
+            >
+              أوقات الرد
+            </h3>
+            <p
+              style={{
+                marginBottom: 0,
+                color: "var(--text2)",
+              }}
+            >
+              بنحاول الرد في أقرب وقت ممكن خلال أيام وساعات العمل العادية. الأعطال العاجلة (زي تعطل كامل للنظام)
+              لها أولوية أعلى من الاستفسارات العادية.
+            </p>
           </div>
         </div>
       )}
