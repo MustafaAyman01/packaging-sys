@@ -3,10 +3,13 @@ import { sb, SUPABASE_URL, SUPABASE_ANON_KEY } from "../services/supabaseClient"
 import { ROLE_LABELS } from "../constants/labels";
 import { t } from "../i18n";
 
-export function Settings({ profile, toast, lang }) {
+export function Settings({ profile, toast, lang, navItemsAll }) {
   const [tab, setTab] = useState("org");
   const [org, setOrg] = useState(null);
   const [members, setMembers] = useState([]);
+  const [permMember, setPermMember] = useState(null);
+  const [permCustom, setPermCustom] = useState(false);
+  const [permSelected, setPermSelected] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // org form
@@ -182,6 +185,32 @@ export function Settings({ profile, toast, lang }) {
       return;
     }
     toast("تم تعطيل المستخدم");
+    loadAll();
+  };
+  const openPermissions = (member) => {
+    setPermMember(member);
+    const hasCustom = Array.isArray(member.allowed_pages);
+    setPermCustom(hasCustom);
+    setPermSelected(
+      hasCustom
+        ? member.allowed_pages
+        : navItemsAll.filter((n) => n.roles.includes(member.role)).map((n) => n.id)
+    );
+  };
+  const togglePermPage = (id) => {
+    setPermSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+  const savePermissions = async () => {
+    const { error } = await sb.rpc("update_member_permissions", {
+      p_profile_id: permMember.id,
+      p_allowed_pages: permCustom ? permSelected : null,
+    });
+    if (error) {
+      toast("خطأ: " + error.message);
+      return;
+    }
+    toast("تم حفظ صلاحيات المستخدم ✓");
+    setPermMember(null);
     loadAll();
   };
   const saveMyProfile = async () => {
@@ -526,11 +555,24 @@ export function Settings({ profile, toast, lang }) {
                       </span>
                     </td>
                     <td>
-                      {m.id !== profile.id && m.role !== "owner" && m.is_active && (
-                        <button className="btn btn-danger btn-sm" onClick={() => deactivate(m.id)}>
-                          تعطيل
-                        </button>
-                      )}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {m.role !== "owner" && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => openPermissions(m)}>
+                            🔐 الصلاحيات
+                          </button>
+                        )}
+                        {m.id !== profile.id && m.role !== "owner" && m.is_active && (
+                          <button className="btn btn-danger btn-sm" onClick={() => deactivate(m.id)}>
+                            تعطيل
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -570,6 +612,92 @@ export function Settings({ profile, toast, lang }) {
               }}
             >
               <button className="btn btn-primary" onClick={saveMyProfile}>
+                {t("actions", "save", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {permMember && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">🔐 صلاحيات {permMember.full_name}</span>
+              <button className="close-btn" onClick={() => setPermMember(null)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 16,
+                  fontWeight: 500,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={permCustom}
+                  onChange={(e) => {
+                    setPermCustom(e.target.checked);
+                    if (!e.target.checked) {
+                      setPermSelected(navItemsAll.filter((n) => n.roles.includes(permMember.role)).map((n) => n.id));
+                    }
+                  }}
+                />
+                تخصيص صلاحيات مختلفة عن الدور الافتراضي ({ROLE_LABELS[permMember.role]})
+              </label>
+              {!permCustom && (
+                <div
+                  className="alert"
+                  style={{
+                    background: "var(--surface3)",
+                    color: "var(--text2)",
+                    marginBottom: 16,
+                  }}
+                >
+                  دلوقتي شغال بصلاحيات دوره الافتراضية. فعّل "تخصيص صلاحيات" فوق عشان تختار الصفحات بنفسك.
+                </div>
+              )}
+              {permCustom && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "6px 16px",
+                    maxHeight: 360,
+                    overflowY: "auto",
+                  }}
+                >
+                  {navItemsAll.map((n) => (
+                    <label
+                      key={n.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13.5,
+                        padding: "4px 0",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={permSelected.includes(n.id)}
+                        onChange={() => togglePermPage(n.id)}
+                      />
+                      {n.icon} {t("nav", n.id, lang)}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPermMember(null)}>
+                {t("actions", "cancel", lang)}
+              </button>
+              <button className="btn btn-primary" onClick={savePermissions}>
                 {t("actions", "save", lang)}
               </button>
             </div>

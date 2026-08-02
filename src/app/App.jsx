@@ -441,7 +441,15 @@ export function App({ features, session, profile, trialEndsAt }) {
     },
   ];
   const myRole = profile?.role || "owner"; // when Supabase disabled, profile is null -> full access
-  const navItems = navItemsAll.filter((n) => features[n.feature] !== false && n.roles.includes(myRole));
+  // لو المستخدم ليه صلاحيات مخصصة (allowed_pages) متسجلة، بتحل محل صلاحيات
+  // الدور الافتراضية بالكامل — وإلا بنرجع لصلاحيات الدور العادية زي ما كانت
+  const navItems = navItemsAll.filter((n) => {
+    if (features[n.feature] === false) return false;
+    if (profile?.allowed_pages && Array.isArray(profile.allowed_pages)) {
+      return profile.allowed_pages.includes(n.id);
+    }
+    return n.roles.includes(myRole);
+  });
   const groups = [...new Set(navItems.map((n) => n.group))];
   const pageTitles = Object.fromEntries(navItems.map((n) => [n.id, t("nav", n.id, lang)]));
   const lowStockCount = data.products.filter(
@@ -489,7 +497,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     csv_import: <CsvImport data={data} update={update} toast={toast} lang={lang} />,
     reports: <Reports data={data} getStockQty={getStockQty} org={org} lang={lang} />,
     settings: SUPABASE_ENABLED ? (
-      <Settings profile={profile} toast={toast} lang={lang} />
+      <Settings profile={profile} toast={toast} lang={lang} navItemsAll={navItemsAll} />
     ) : (
       <div className="card">
         <div className="card-body">الإعدادات متاحة فقط عند تفعيل Supabase.</div>
