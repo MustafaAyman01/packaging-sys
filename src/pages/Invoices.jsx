@@ -17,6 +17,8 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewInv, setViewInv] = useState(null);
+  const [returnInv, setReturnInv] = useState(null);
+  const [returnQtys, setReturnQtys] = useState({});
   const [form, setForm] = useState({});
   const [items, setItems] = useState([]);
   const [originalItems, setOriginalItems] = useState([]);
@@ -155,6 +157,70 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
         return updated;
       })
     );
+  const openReturn = (inv) => {
+    if (inv.status === "cancelled") {
+      toast("⚠️ لا يمكن تسجيل مرتجع على فاتورة ملغاة");
+      return;
+    }
+    setReturnQtys({});
+    setReturnInv(inv);
+  };
+  const saveReturn = () => {
+    const inv = returnInv;
+    const linesToReturn = (inv.items || [])
+      .map((item) => ({
+        item,
+        qty: +returnQtys[item.id] || 0,
+      }))
+      .filter((l) => l.qty > 0);
+    if (linesToReturn.length === 0) {
+      toast("⚠️ ادخل كمية مرتجعة لبند واحد على الأقل");
+      return;
+    }
+    const overLimit = linesToReturn.find((l) => l.qty > l.item.quantity);
+    if (overLimit) {
+      toast(`⚠️ الكمية المرتجعة من "${overLimit.item.product_name}" أكبر من الكمية الأصلية بالفاتورة`);
+      return;
+    }
+    const sessionNote = `مرتجع فاتورة ${inv.invoice_number} — ${fd(today())}`;
+    let totalReturnedValue = 0;
+    const newMovements = linesToReturn.map(({ item, qty }) => {
+      // بنستخدم متوسط سعر الوحدة الفعلي بعد الخصم (total_price / quantity) عشان
+      // قيمة المرتجع تتحسب صح حتى لو كان على البند خصم وقت البيع/الشراء
+      const effectiveUnitPrice = item.quantity > 0 ? item.total_price / item.quantity : 0;
+      const lineValue = effectiveUnitPrice * qty;
+      totalReturnedValue += lineValue;
+      updateStock(item.product_id, inv.type === "sale" ? qty : -qty);
+      return {
+        id: generateId(),
+        product_id: item.product_id,
+        movement_type: inv.type === "sale" ? "return_in" : "return_out",
+        quantity: qty,
+        unit_cost: effectiveUnitPrice,
+        reference_type: "return",
+        notes: `${sessionNote} (${item.product_name})`,
+        created_at: today(),
+      };
+    });
+    update("stock_movements", [...data.stock_movements, ...newMovements]);
+
+    const newTotal = Math.max(0, inv.total_amount - totalReturnedValue);
+    const updatedInvoice = {
+      ...inv,
+      total_amount: newTotal,
+      subtotal: Math.max(0, (inv.subtotal || inv.total_amount) - totalReturnedValue),
+      status: inv.paid_amount >= newTotal && newTotal > 0 ? "paid" : inv.status,
+      notes: `${inv.notes ? inv.notes + "\n" : ""}${sessionNote}: ${fc(totalReturnedValue)}`,
+    };
+    update(
+      "invoices",
+      data.invoices.map((i) => (i.id === inv.id ? updatedInvoice : i))
+    );
+    toast(`تم تسجيل المرتجع بقيمة ${fc(totalReturnedValue)} وتحديث الفاتورة ✓`);
+    setReturnInv(null);
+    setReturnQtys({});
+    if (viewInv?.id === inv.id) setViewInv(updatedInvoice);
+  };
   const saveInvoice = async () => {
     if (saving) return; // منع الضغط المتكرر على "حفظ" أثناء تنفيذ عملية سابقة
     if (!items.some((i) => i.product_id)) return;
@@ -1076,6 +1142,9 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
                 >
                   ✏️ تعديل
                 </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => openReturn(viewInv)}>
+                  🔄 تسجيل مرتجع
+                </button>
                 <button className="close-btn" onClick={() => setViewInv(null)}>
                   ×
                 </button>
@@ -1425,6 +1494,100 @@ export function Invoices({ data, update, updateStock, toast, org, lang }) {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setViewInv(null)}>
                 {t("actions", "close", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {returnInv && (
+        <div className="modal-overlay">
+          <div className="modal modal-lg">
+            <div className="modal-header">
+              <span className="modal-title">🔄 تسجيل مرتجع — فاتورة {returnInv.invoice_number}</span>
+              <button className="close-btn" onClick={() => setReturnInv(null)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div
+                className="alert alert-warning"
+                style={{
+                  marginBottom: 16,
+                }}
+              >
+                حدّد الكمية المرتجعة لكل بند (سيبها فاضية أو صفر لو البند مش هيرجع). هيتحدث المخزون تلقائيًا
+                ({returnInv.type === "sale" ? "زيادة" : "نقص"})، وهتتخصم قيمة المرتجع من إجمالي الفاتورة.
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t("common", "product", lang)}</th>
+                    <th>الكمية الأصلية</th>
+                    <th>سعر الوحدة الفعلي</th>
+                    <th>الكمية المرتجعة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(returnInv.items || []).map((item) => {
+                    const effectiveUnitPrice = item.quantity > 0 ? item.total_price / item.quantity : 0;
+                    return (
+                      <tr key={item.id}>
+                        <td
+                          style={{
+                            fontWeight: 500,
+                          }}
+                        >
+                          {item.product_name}
+                        </td>
+                        <td>{item.quantity}</td>
+                        <td>{fc(effectiveUnitPrice)}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max={item.quantity}
+                            value={returnQtys[item.id] ?? ""}
+                            onChange={(e) =>
+                              setReturnQtys({
+                                ...returnQtys,
+                                [item.id]: e.target.value,
+                              })
+                            }
+                            style={{
+                              width: 90,
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {(() => {
+                const totalReturn = (returnInv.items || []).reduce((s, item) => {
+                  const qty = +returnQtys[item.id] || 0;
+                  const effectiveUnitPrice = item.quantity > 0 ? item.total_price / item.quantity : 0;
+                  return s + qty * effectiveUnitPrice;
+                }, 0);
+                return totalReturn > 0 ? (
+                  <div
+                    className="totals-row total"
+                    style={{
+                      marginTop: 14,
+                    }}
+                  >
+                    <span>قيمة المرتجع</span>
+                    <span>{fc(totalReturn)}</span>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setReturnInv(null)}>
+                {t("actions", "cancel", lang)}
+              </button>
+              <button className="btn btn-primary" onClick={saveReturn}>
+                تأكيد المرتجع
               </button>
             </div>
           </div>
