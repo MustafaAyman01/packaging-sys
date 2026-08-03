@@ -4,7 +4,7 @@ import { ROLE_LABELS } from "../constants/labels";
 import { t } from "../i18n";
 
 export function Settings({ profile, toast, lang, navItemsAll }) {
-  const [tab, setTab] = useState("org");
+  const [tab, setTab] = useState("profile");
   const [org, setOrg] = useState(null);
   const [members, setMembers] = useState([]);
   const [permMember, setPermMember] = useState(null);
@@ -239,9 +239,11 @@ export function Settings({ profile, toast, lang, navItemsAll }) {
   return (
     <div>
       <div className="tabs">
-        <div className={`tab${tab === "org" ? " active" : ""}`} onClick={() => setTab("org")}>
-          بيانات الشركة
-        </div>
+        {canManage && (
+          <div className={`tab${tab === "org" ? " active" : ""}`} onClick={() => setTab("org")}>
+            بيانات الشركة
+          </div>
+        )}
         {canManage && (
           <div className={`tab${tab === "team" ? " active" : ""}`} onClick={() => setTab("team")}>
             المستخدمون والصلاحيات
@@ -251,7 +253,7 @@ export function Settings({ profile, toast, lang, navItemsAll }) {
           حسابي
         </div>
       </div>
-      {tab === "org" && (
+      {tab === "org" && canManage && (
         <div className="card">
           <div className="card-header">
             <span className="card-title">بيانات الشركة / المصنع</span>

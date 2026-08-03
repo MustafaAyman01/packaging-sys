@@ -339,7 +339,7 @@ export function App({ features, session, profile, trialEndsAt }) {
       icon: "📊",
       group: "main",
       feature: "core",
-      roles: ["owner", "admin", "accountant", "sales", "warehouse", "staff"],
+      roles: ["owner", "admin"],
     },
     {
       id: "invoices",
@@ -452,6 +452,14 @@ export function App({ features, session, profile, trialEndsAt }) {
   });
   const groups = [...new Set(navItems.map((n) => n.group))];
   const pageTitles = Object.fromEntries(navItems.map((n) => [n.id, t("nav", n.id, lang)]));
+  // لو الصفحة الحالية مش موجودة في صلاحيات المستخدم (زي "dashboard" الافتراضية
+  // لو اتشالت من صلاحياته)، نوجهه لأول صفحة متاحة ليه بدل ما يفضل شايف محتواها
+  useEffect(() => {
+    if (navItems.length === 0) return;
+    if (!navItems.some((n) => n.id === page)) {
+      setPage(navItems[0].id);
+    }
+  }, [navItems.map((n) => n.id).join(","), page]);
   const lowStockCount = data.products.filter(
     (p) => getStockQty(p.id) < p.min_stock_level && p.is_active
   ).length;
@@ -926,7 +934,7 @@ export function App({ features, session, profile, trialEndsAt }) {
               </span>
             </div>
           </div>
-          <div className="content">{pages[page]}</div>
+          <div className="content">{navItems.some((n) => n.id === page) ? pages[page] : null}</div>
         </main>
       </div>
       {toastMsg && <Toast msg={toastMsg} onHide={() => setToastMsg(null)} />}
