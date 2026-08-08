@@ -33,13 +33,16 @@ export function Payments({ data, update, toast, lang }) {
   });
   const unpaid = data.invoices.filter(
     (i) =>
-      i.type === "sale" && i.status !== "paid" && i.status !== "cancelled" && i.total_amount > i.paid_amount
+      (i.type === "sale" || i.type === "purchase") &&
+      i.status !== "paid" &&
+      i.status !== "cancelled" &&
+      i.total_amount > i.paid_amount
   );
   const filteredUnpaid = unpaid.filter((i) => {
     if (!invoiceSearch) return true;
     const q = invoiceSearch.toLowerCase();
-    const client = data.clients.find((c) => c.id === i.client_id);
-    return i.invoice_number.toLowerCase().includes(q) || (client?.name || "").toLowerCase().includes(q);
+    const party = i.type === "sale" ? data.clients.find((c) => c.id === i.client_id) : data.suppliers.find((s) => s.id === i.supplier_id);
+    return i.invoice_number.toLowerCase().includes(q) || (party?.name || "").toLowerCase().includes(q);
   });
   const unpaidForParty = (partyType, partyId) => {
     const field = partyType === "client" ? "client_id" : "supplier_id";
@@ -446,7 +449,7 @@ export function Payments({ data, update, toast, lang }) {
                         setInvoiceSearch(e.target.value);
                         setInvoicePickerOpen(true);
                       }}
-                      placeholder="اكتب أي رقم أو جزء من رقم الفاتورة أو اسم العميل..."
+                      placeholder="اكتب أي رقم أو جزء من رقم الفاتورة أو اسم العميل/المورد..."
                       autoComplete="off"
                     />
                     {invoicePickerOpen && (
@@ -477,7 +480,10 @@ export function Payments({ data, update, toast, lang }) {
                           </div>
                         )}
                         {filteredUnpaid.map((i) => {
-                          const client = data.clients.find((c) => c.id === i.client_id);
+                          const party =
+                            i.type === "sale"
+                              ? data.clients.find((c) => c.id === i.client_id)
+                              : data.suppliers.find((s) => s.id === i.supplier_id);
                           return (
                             <div
                               key={i.id}
@@ -510,7 +516,16 @@ export function Payments({ data, update, toast, lang }) {
                                 >
                                   {i.invoice_number}
                                 </span>
-                                {client && (
+                                <span
+                                  className="tag"
+                                  style={{
+                                    marginRight: 6,
+                                    fontSize: 10,
+                                  }}
+                                >
+                                  {i.type === "sale" ? "مبيعات" : "مشتريات"}
+                                </span>
+                                {party && (
                                   <span
                                     style={{
                                       color: "var(--text3)",
@@ -518,7 +533,7 @@ export function Payments({ data, update, toast, lang }) {
                                       marginRight: 8,
                                     }}
                                   >
-                                    {client.name}
+                                    {party.name}
                                   </span>
                                 )}
                               </span>
