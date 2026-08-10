@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "prettier --check \"src/**/*.{js,jsx}\"",
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {

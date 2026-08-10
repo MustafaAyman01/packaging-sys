@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Non-blocking for now: the existing codebase has pre-existing formatting
+      # drift in 17 files (unrelated to this CI setup). Reformatting them is a
+      # separate, deliberate decision, not something to fold silently into this
+      # change. Once that's addressed, remove `continue-on-error` to make this
+      # a real gate.
+      - name: Lint (prettier --check, report-only for now)
+        run: npx prettier --check "src/**/*.{js,jsx}"
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
