@@ -101,6 +101,7 @@ export function HR({ data, update, toast, org, lang }) {
       advance_deduction: "",
       period_month: month,
       payment_date: today(),
+      method: "cash",
       notes: "",
     });
   };
@@ -164,6 +165,7 @@ export function HR({ data, update, toast, org, lang }) {
     }
     const expId = generateId();
     const payId = generateId();
+    const paymentMethod = salForm.method || "cash";
     update("salary_payments", [
       ...data.salary_payments,
       {
@@ -178,6 +180,7 @@ export function HR({ data, update, toast, org, lang }) {
         amount: baseSalary,
         // محفوظة للتوافق مع السجلات القديمة التي تعتمد على amount
         net_amount: netAmount,
+        method: paymentMethod,
         expense_id: expId,
       },
     ]);
@@ -195,6 +198,7 @@ export function HR({ data, update, toast, org, lang }) {
         amount: netAmount,
         expense_date: salForm.payment_date,
         category: "رواتب",
+        method: paymentMethod,
         notes: `${salForm.notes || ""} ${autoNote}`.trim(),
       },
     ]);
@@ -672,6 +676,24 @@ export function HR({ data, update, toast, org, lang }) {
                     }
                   />
                 </div>
+                <div className="form-group">
+                  <label>طريقة الصرف</label>
+                  <select
+                    value={salForm.method || "cash"}
+                    onChange={(e) =>
+                      setSalForm({
+                        ...salForm,
+                        method: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="cash">نقدي (من الخزنة)</option>
+                    <option value="bank_transfer">تحويل بنكي</option>
+                    <option value="check">شيك</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-row form-row-2">
                 <div className="form-group">
                   <label>ملاحظات</label>
                   <input

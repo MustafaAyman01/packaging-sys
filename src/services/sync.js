@@ -122,7 +122,7 @@ export const SYNC_TABLES = {
   },
   expenses: {
     table: "expenses",
-    fields: ["title", "amount", "expense_date", "category", "notes"],
+    fields: ["title", "amount", "expense_date", "category", "method", "notes"],
   },
   employees: {
     table: "employees",
@@ -147,6 +147,7 @@ export const SYNC_TABLES = {
       "amount",
       "period_month",
       "payment_date",
+      "method",
       "notes",
       "expense_id",
       "advance_deduction",

@@ -14,6 +14,7 @@ export function Expenses({ data, update, toast, lang }) {
       amount: "",
       expense_date: today(),
       category: "إيجار",
+      method: "cash",
       notes: "",
     });
     setShowModal(true);
@@ -215,23 +216,41 @@ export function Expenses({ data, update, toast, lang }) {
                   />
                 </div>
               </div>
-              <div className="form-group">
-                <label>الفئة</label>
-                <select
-                  value={form.category || ""}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      category: e.target.value,
-                    })
-                  }
-                >
-                  {cats.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>الفئة</label>
+                  <select
+                    value={form.category || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        category: e.target.value,
+                      })
+                    }
+                  >
+                    {cats.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>طريقة الدفع</label>
+                  <select
+                    value={form.method || "cash"}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        method: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="cash">نقدي (من الخزنة)</option>
+                    <option value="bank_transfer">تحويل بنكي</option>
+                    <option value="check">شيك</option>
+                  </select>
+                </div>
               </div>
               <div className="form-group">
                 <label>ملاحظات</label>

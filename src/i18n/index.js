@@ -20,6 +20,7 @@ export const STRINGS = {
     suppliers: { ar: "الموردون", en: "Suppliers" },
     payments: { ar: "المدفوعات", en: "Payments" },
     cash_vouchers: { ar: "سندات القبض والصرف", en: "Cash Vouchers" },
+    cash_register: { ar: "الخزنة", en: "Cash Register" },
     expenses: { ar: "المصروفات", en: "Expenses" },
     hr: { ar: "الموارد البشرية", en: "HR" },
     csv_import: { ar: "استيراد CSV", en: "CSV Import" },
