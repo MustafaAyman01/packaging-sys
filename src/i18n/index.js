@@ -12,6 +12,7 @@ export const LANG_STORAGE_KEY = "lang";
 export const STRINGS = {
   nav: {
     dashboard: { ar: "لوحة التحكم", en: "Dashboard" },
+    pos: { ar: "نقطة البيع", en: "POS" },
     invoices: { ar: "الفواتير", en: "Invoices" },
     clients: { ar: "العملاء", en: "Clients" },
     products: { ar: "المنتجات", en: "Products" },

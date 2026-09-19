@@ -10,6 +10,7 @@ import { Suppliers } from "../pages/Suppliers";
 import { Payments } from "../pages/Payments";
 import { CashVouchers } from "../pages/CashVouchers";
 import { CashRegister } from "../pages/CashRegister";
+import { POS } from "../pages/POS";
 import { Expenses } from "../pages/Expenses";
 import { HR } from "../pages/HR";
 import { CsvImport } from "../pages/CsvImport";
@@ -343,6 +344,13 @@ export function App({ features, session, profile, trialEndsAt }) {
       roles: ["owner", "admin"],
     },
     {
+      id: "pos",
+      icon: "🛒",
+      group: "sales",
+      feature: "core",
+      roles: ["owner", "admin", "accountant", "sales"],
+    },
+    {
       id: "invoices",
       icon: "📄",
       group: "sales",
@@ -509,6 +517,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     payments: <Payments data={data} update={update} toast={toast} lang={lang} />,
     cash_vouchers: <CashVouchers data={data} update={update} toast={toast} lang={lang} />,
     cash_register: <CashRegister toast={toast} />,
+    pos: <POS org={org} profile={profile} toast={toast} />,
     expenses: <Expenses data={data} update={update} toast={toast} lang={lang} />,
     hr: <HR data={data} update={update} toast={toast} org={org} lang={lang} />,
     csv_import: <CsvImport data={data} update={update} toast={toast} lang={lang} />,
