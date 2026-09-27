@@ -517,7 +517,7 @@ export function App({ features, session, profile, trialEndsAt }) {
     payments: <Payments data={data} update={update} toast={toast} lang={lang} />,
     cash_vouchers: <CashVouchers data={data} update={update} toast={toast} lang={lang} />,
     cash_register: <CashRegister toast={toast} />,
-    pos: <POS org={org} profile={profile} toast={toast} />,
+    pos: <POS org={org} profile={profile} data={data} update={update} toast={toast} myRole={myRole} />,
     expenses: <Expenses data={data} update={update} toast={toast} lang={lang} />,
     hr: <HR data={data} update={update} toast={toast} org={org} lang={lang} />,
     csv_import: <CsvImport data={data} update={update} toast={toast} lang={lang} />,
