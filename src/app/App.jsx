@@ -129,6 +129,18 @@ export function App({ features, session, profile, trialEndsAt }) {
     setCloudReady(false);
     setCloudRetryKey((k) => k + 1);
   };
+  // تحديث هادئ للبيانات من غير ما نعرض شاشة تحميل كاملة — مخصوص للعمليات اللي
+  // بتتم عن طريق RPC مباشرة (زي بيع POS) وبتحتاج الشاشات التانية (لوحة التحكم،
+  // التقارير، الفواتير) تعرف بيها فورًا من غير ما الكاشير يعمل Reload يدوي.
+  const refreshCloudDataSilently = async () => {
+    if (!SUPABASE_ENABLED || !profile) return;
+    try {
+      const cloud = await fetchCloudData(profile.org_id);
+      setData((d) => ({ ...d, ...cloud }));
+    } catch (e) {
+      console.error("Silent refresh error:", e);
+    }
+  };
 
   // Auto-save a local cache copy ONLY when Supabase is disabled (pure offline mode).
   // When Supabase is enabled, the cloud is the source of truth — we don't
@@ -517,7 +529,17 @@ export function App({ features, session, profile, trialEndsAt }) {
     payments: <Payments data={data} update={update} toast={toast} lang={lang} />,
     cash_vouchers: <CashVouchers data={data} update={update} toast={toast} lang={lang} />,
     cash_register: <CashRegister toast={toast} />,
-    pos: <POS org={org} profile={profile} data={data} update={update} toast={toast} myRole={myRole} />,
+    pos: (
+      <POS
+        org={org}
+        profile={profile}
+        data={data}
+        update={update}
+        toast={toast}
+        myRole={myRole}
+        refreshData={refreshCloudDataSilently}
+      />
+    ),
     expenses: <Expenses data={data} update={update} toast={toast} lang={lang} />,
     hr: <HR data={data} update={update} toast={toast} org={org} lang={lang} />,
     csv_import: <CsvImport data={data} update={update} toast={toast} lang={lang} />,

@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { sb } from "../services/supabaseClient";
-import { fc, fd } from "../utils/format";
+import { fc, fd, generateId, today } from "../utils/format";
 import { ProductPicker } from "../components/ProductPicker";
+import { PartyPicker } from "../components/PartyPicker";
+import { PAYMENT_METHODS } from "../constants/labels";
 
-// Batch 2/3 — POS Foundation + Barcode/Cart.
-// البيع الفعلي (Complete Sale) جاي في الباتش الجاية.
-export function POS({ org, profile, data, update, toast, myRole }) {
+const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
+const DEFAULT_TAX_RATE = 14;
+
+// Batch 2/3/4 — POS Foundation + Barcode/Cart + Complete Sale.
+export function POS({ org, profile, data, update, toast, myRole, refreshData }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [showOpen, setShowOpen] = useState(false);
@@ -108,6 +112,80 @@ export function POS({ org, profile, data, update, toast, myRole }) {
 
   const lineTotal = (l) => l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
   const cartSubtotal = cart.reduce((s, l) => s + lineTotal(l), 0);
+  const cartTax = cartSubtotal * (DEFAULT_TAX_RATE / 100);
+  const cartTotal = cartSubtotal + cartTax;
+
+  // ---------- الدفع وإتمام البيع ----------
+  const [showPay, setShowPay] = useState(false);
+  const [clientId, setClientId] = useState("");
+  const [paidAmount, setPaidAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("cash");
+  const [saleBusy, setSaleBusy] = useState(false);
+  const [pendingInvoiceId, setPendingInvoiceId] = useState(null); // ثابت طول محاولات نفس البيعة (idempotency)
+  const [receipt, setReceipt] = useState(null); // نتيجة RPC بعد نجاح البيع
+
+  const ensureDefaultCashClient = async () => {
+    const existing = data.clients.find((c) => c.name === DEFAULT_CASH_CLIENT_NAME && c.is_active);
+    if (existing) return existing.id;
+    const newClient = { id: generateId(), name: DEFAULT_CASH_CLIENT_NAME, is_active: true, type: "retail" };
+    await update("clients", [...data.clients, newClient]);
+    return newClient.id;
+  };
+
+  const openPayModal = async () => {
+    if (cart.length === 0) return;
+    const defaultClientId = await ensureDefaultCashClient();
+    setClientId(defaultClientId);
+    setPaidAmount(String(Math.round(cartTotal * 100) / 100));
+    setPayMethod("cash");
+    setPendingInvoiceId(generateId()); // بيتولّد مرة واحدة بس لكل محاولة بيع
+    setShowPay(true);
+  };
+
+  const completeSale = async () => {
+    if (saleBusy) return;
+    if (!clientId) {
+      toast("⚠️ اختار عميل أو خلي العميل النقدي الافتراضي");
+      return;
+    }
+    const paid = +paidAmount || 0;
+    setSaleBusy(true);
+    try {
+      const { data: result, error } = await sb.rpc("create_invoice_with_effects", {
+        p_invoice_id: pendingInvoiceId,
+        p_type: "sale",
+        p_client_id: clientId,
+        p_supplier_id: null,
+        p_invoice_date: today(),
+        p_due_date: null,
+        p_discount_amount: 0,
+        p_tax_rate: DEFAULT_TAX_RATE,
+        p_notes: "بيع من نقطة البيع (POS)",
+        p_items: cart.map((l) => ({
+          product_id: l.product_id,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount_percent: l.discount_percent || 0,
+        })),
+        p_payment: paid > 0 ? { amount: paid, method: payMethod } : null,
+      });
+      if (error) throw error;
+
+      setReceipt({ ...result, change: payMethod === "cash" ? Math.max(0, paid - cartTotal) : 0 });
+      setShowPay(false);
+      setCart([]);
+      toast(result.status === "already_applied" ? "تم رصد هذه العملية مسبقًا ✓" : "تمت عملية البيع ✓");
+      refreshData && refreshData();
+    } catch (e) {
+      toast(`⚠️ ${e.message}`);
+    }
+    setSaleBusy(false);
+  };
+
+  const startNewSale = () => {
+    setReceipt(null);
+    setPendingInvoiceId(null);
+  };
 
   const openOpenModal = () => {
     setOpeningBalance(lastClosedBalance != null ? String(lastClosedBalance) : "");
@@ -441,22 +519,163 @@ export function POS({ org, profile, data, update, toast, myRole }) {
           </div>
           <div className="card-body">
             <div className="totals-box">
+              <div className="totals-row">
+                <span>الإجمالي قبل الضريبة</span>
+                <span>{fc(cartSubtotal)}</span>
+              </div>
+              <div className="totals-row">
+                <span>الضريبة ({DEFAULT_TAX_RATE}%)</span>
+                <span>{fc(cartTax)}</span>
+              </div>
               <div className="totals-row total">
-                <span>الإجمالي (قبل الضريبة)</span>
-                <span style={{ color: "var(--accent)", fontSize: 20 }}>{fc(cartSubtotal)}</span>
+                <span>الإجمالي</span>
+                <span style={{ color: "var(--accent)", fontSize: 20 }}>{fc(cartTotal)}</span>
               </div>
             </div>
             <button
               className="btn btn-primary"
               disabled={cart.length === 0}
               style={{ width: "100%", marginTop: 14, padding: "12px", fontSize: 15 }}
-              title="جاي في الباتش الجاية"
+              onClick={openPayModal}
             >
               💳 الدفع وإتمام البيع
             </button>
           </div>
         </div>
       </div>
+
+      {showPay && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">الدفع وإتمام البيع</span>
+              <button className="close-btn" onClick={() => setShowPay(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>العميل</label>
+                <PartyPicker
+                  parties={data.clients}
+                  value={clientId}
+                  onSelect={setClientId}
+                  placeholder="دوّر على عميل أو سيب العميل النقدي الافتراضي..."
+                />
+              </div>
+              <div className="totals-box" style={{ marginBottom: 14 }}>
+                <div className="totals-row">
+                  <span>الإجمالي قبل الضريبة</span>
+                  <span>{fc(cartSubtotal)}</span>
+                </div>
+                <div className="totals-row">
+                  <span>الضريبة ({DEFAULT_TAX_RATE}%)</span>
+                  <span>{fc(cartTax)}</span>
+                </div>
+                <div className="totals-row total">
+                  <span>الإجمالي المطلوب</span>
+                  <span style={{ color: "var(--accent)" }}>{fc(cartTotal)}</span>
+                </div>
+              </div>
+              <div className="form-row form-row-2">
+                <div className="form-group">
+                  <label>طريقة الدفع</label>
+                  <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
+                    {Object.entries(PAYMENT_METHODS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>المبلغ المدفوع</label>
+                  <input type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} />
+                </div>
+              </div>
+              {payMethod === "cash" && +paidAmount > cartTotal && (
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--green)",
+                  }}
+                >
+                  الباقي للعميل (Change): {fc(+paidAmount - cartTotal)}
+                </div>
+              )}
+              {+paidAmount < cartTotal && (
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--text3)",
+                  }}
+                >
+                  متبقي على العميل: {fc(cartTotal - (+paidAmount || 0))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowPay(false)}>
+                رجوع
+              </button>
+              <button className="btn btn-primary" disabled={saleBusy} onClick={completeSale}>
+                {saleBusy ? "جاري إتمام البيع..." : "✅ إتمام البيع"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {receipt && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">تمت عملية البيع ✓</span>
+            </div>
+            <div className="modal-body">
+              <div
+                style={{
+                  textAlign: "center",
+                  marginBottom: 14,
+                }}
+              >
+                <div style={{ fontSize: 40 }}>✅</div>
+                <div style={{ fontWeight: 700, fontSize: 18 }}>
+                  فاتورة {receipt.invoice?.invoice_number}
+                </div>
+              </div>
+              <div className="totals-box">
+                <div className="totals-row">
+                  <span>الإجمالي</span>
+                  <span>{fc(receipt.invoice?.total_amount)}</span>
+                </div>
+                <div className="totals-row">
+                  <span>المدفوع</span>
+                  <span>{fc(receipt.invoice?.paid_amount)}</span>
+                </div>
+                {receipt.change > 0 && (
+                  <div className="totals-row total">
+                    <span>الباقي للعميل</span>
+                    <span style={{ color: "var(--green)" }}>{fc(receipt.change)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => toast("طباعة الإيصال الحراري جاية في باتش لاحقة")}
+              >
+                🖨️ طباعة إيصال
+              </button>
+              <button className="btn btn-primary" onClick={startNewSale}>
+                بيعة جديدة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
