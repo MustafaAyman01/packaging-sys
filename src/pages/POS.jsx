@@ -4,6 +4,7 @@ import { fc, fd, generateId, today } from "../utils/format";
 import { ProductPicker } from "../components/ProductPicker";
 import { PartyPicker } from "../components/PartyPicker";
 import { PAYMENT_METHODS } from "../constants/labels";
+import { printReceipt } from "../features/print/printReceipt";
 
 const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
 const DEFAULT_TAX_RATE = 14;
@@ -171,7 +172,17 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
       });
       if (error) throw error;
 
-      setReceipt({ ...result, change: payMethod === "cash" ? Math.max(0, paid - cartTotal) : 0 });
+      setReceipt({
+        ...result,
+        change: payMethod === "cash" ? Math.max(0, paid - cartTotal) : 0,
+        // لقطة من بنود السلة بالاسم — محتاجينها للطباعة بعد ما نصفّر الكارت
+        printItems: cart.map((l) => ({
+          name: l.name,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          total_price: lineTotal(l),
+        })),
+      });
       setShowPay(false);
       setCart([]);
       toast(result.status === "already_applied" ? "تم رصد هذه العملية مسبقًا ✓" : "تمت عملية البيع ✓");
@@ -665,7 +676,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
             <div className="modal-footer">
               <button
                 className="btn btn-secondary"
-                onClick={() => toast("طباعة الإيصال الحراري جاية في باتش لاحقة")}
+                onClick={() => printReceipt(receipt.invoice, receipt.printItems, org)}
               >
                 🖨️ طباعة إيصال
               </button>
