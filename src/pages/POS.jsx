@@ -198,6 +198,75 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
     setPendingInvoiceId(null);
   };
 
+  // ---------- المرتجعات ----------
+  const [showReturn, setShowReturn] = useState(false);
+  const [returnInvoiceQuery, setReturnInvoiceQuery] = useState("");
+  const [returnInvoice, setReturnInvoice] = useState(null);
+  const [returnQtys, setReturnQtys] = useState({});
+  const [returnReason, setReturnReason] = useState("");
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [pendingReturnId, setPendingReturnId] = useState(null);
+
+  const openReturnModal = () => {
+    setReturnInvoiceQuery("");
+    setReturnInvoice(null);
+    setReturnQtys({});
+    setReturnReason("");
+    setShowReturn(true);
+  };
+
+  const matchingInvoices = data.invoices
+    .filter(
+      (i) =>
+        i.type === "sale" &&
+        i.status !== "cancelled" &&
+        returnInvoiceQuery.trim().length > 0 &&
+        i.invoice_number?.toLowerCase().includes(returnInvoiceQuery.trim().toLowerCase())
+    )
+    .slice(0, 8);
+
+  const selectReturnInvoice = (inv) => {
+    setReturnInvoice(inv);
+    setReturnInvoiceQuery("");
+    setReturnQtys({});
+    setPendingReturnId(generateId());
+  };
+
+  const remainingQty = (item) => (item.quantity || 0) - (item.returned_quantity || 0);
+
+  const submitReturn = async () => {
+    if (returnBusy) return;
+    const lines = Object.entries(returnQtys)
+      .filter(([, qty]) => +qty > 0)
+      .map(([invoice_item_id, qty]) => ({ invoice_item_id, quantity: +qty }));
+    if (lines.length === 0) {
+      toast("⚠️ حدّد كمية مرتجع في بند واحد على الأقل");
+      return;
+    }
+    setReturnBusy(true);
+    try {
+      const { data: result, error } = await sb.rpc("record_invoice_return", {
+        p_return_id: pendingReturnId,
+        p_invoice_id: returnInvoice.id,
+        p_lines: lines,
+        p_reason: returnReason || null,
+      });
+      if (error) throw error;
+      toast(
+        result.status === "already_applied"
+          ? "تم رصد هذا المرتجع مسبقًا ✓"
+          : `تم تسجيل المرتجع ✓ (قيمة المرتجع: ${fc(result.return_value)}${
+              result.credit_issued > 0 ? ` — رصيد للعميل: ${fc(result.credit_issued)}` : ""
+            })`
+      );
+      setShowReturn(false);
+      refreshData && refreshData();
+    } catch (e) {
+      toast(`⚠️ ${e.message}`);
+    }
+    setReturnBusy(false);
+  };
+
   const openOpenModal = () => {
     setOpeningBalance(lastClosedBalance != null ? String(lastClosedBalance) : "");
     setOpenNotes("");
@@ -402,8 +471,8 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
             <button className="btn btn-secondary btn-sm" disabled title="جاي في الباتش الجاية">
               ⏸️ تعليق البيع
             </button>
-            <button className="btn btn-secondary btn-sm" disabled title="جاي في الباتش الجاية">
-              📋 فواتير سابقة
+            <button className="btn btn-secondary btn-sm" onClick={openReturnModal}>
+              ↩️ مرتجع
             </button>
             <button className="btn btn-secondary btn-sm" disabled title="جاي في الباتش الجاية">
               🔒 قفل الخزنة
@@ -683,6 +752,125 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
               <button className="btn btn-primary" onClick={startNewSale}>
                 بيعة جديدة
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReturn && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">↩️ مرتجع فاتورة</span>
+              <button className="close-btn" onClick={() => setShowReturn(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {!returnInvoice ? (
+                <div className="form-group" style={{ position: "relative" }}>
+                  <label>رقم الفاتورة</label>
+                  <input
+                    autoFocus
+                    value={returnInvoiceQuery}
+                    onChange={(e) => setReturnInvoiceQuery(e.target.value)}
+                    placeholder="اكتب رقم الفاتورة (INV-...)"
+                  />
+                  {matchingInvoices.length > 0 && (
+                    <div
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        marginTop: 4,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {matchingInvoices.map((inv) => (
+                        <div
+                          key={inv.id}
+                          onClick={() => selectReturnInvoice(inv)}
+                          style={{
+                            padding: "8px 12px",
+                            cursor: "pointer",
+                            borderBottom: "1px solid var(--border)",
+                            fontSize: 13,
+                          }}
+                        >
+                          <strong>{inv.invoice_number}</strong> — {fc(inv.total_amount)} — {fd(inv.invoice_date)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text3)",
+                      marginBottom: 10,
+                    }}
+                  >
+                    فاتورة {returnInvoice.invoice_number} — إجمالي {fc(returnInvoice.total_amount)}
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>المنتج</th>
+                        <th>الكمية الأصلية</th>
+                        <th>اترجع قبل كده</th>
+                        <th>المتاح للإرجاع</th>
+                        <th>الكمية المرتجعة الآن</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(returnInvoice.items || []).map((item) => {
+                        const product = data.products.find((p) => p.id === item.product_id);
+                        const remaining = remainingQty(item);
+                        return (
+                          <tr key={item.id}>
+                            <td>{product?.name || "—"}</td>
+                            <td>{item.quantity}</td>
+                            <td>{item.returned_quantity || 0}</td>
+                            <td style={{ fontWeight: 600 }}>{remaining}</td>
+                            <td style={{ width: 100 }}>
+                              <input
+                                type="number"
+                                min="0"
+                                max={remaining}
+                                disabled={remaining <= 0}
+                                value={returnQtys[item.id] || ""}
+                                onChange={(e) =>
+                                  setReturnQtys({ ...returnQtys, [item.id]: e.target.value })
+                                }
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="form-group" style={{ marginTop: 14 }}>
+                    <label>سبب المرتجع</label>
+                    <textarea value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              {returnInvoice && (
+                <button className="btn btn-secondary" onClick={() => setReturnInvoice(null)}>
+                  رجوع لاختيار فاتورة تانية
+                </button>
+              )}
+              <button className="btn btn-secondary" onClick={() => setShowReturn(false)}>
+                إلغاء
+              </button>
+              {returnInvoice && (
+                <button className="btn btn-primary" disabled={returnBusy} onClick={submitReturn}>
+                  {returnBusy ? "جاري التسجيل..." : "✅ تأكيد المرتجع"}
+                </button>
+              )}
             </div>
           </div>
         </div>
