@@ -198,6 +198,67 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
     setPendingInvoiceId(null);
   };
 
+  // ---------- تعليق/استرجاع البيع ----------
+  const [heldSales, setHeldSales] = useState([]);
+  const [showHeld, setShowHeld] = useState(false);
+
+  const loadHeldSales = async () => {
+    const { data: rows, error } = await sb
+      .from("held_sales")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error) setHeldSales(rows || []);
+  };
+
+  useEffect(() => {
+    if (session) loadHeldSales();
+  }, [session]);
+
+  const holdSale = async () => {
+    if (cart.length === 0) return;
+    try {
+      const { error } = await sb.from("held_sales").insert({
+        org_id: org?.id,
+        held_by: profile?.id,
+        cart,
+      });
+      if (error) throw error;
+      setCart([]);
+      toast("تم تعليق البيع ✓ — تقدر تسترجعه من \"البيعات المعلّقة\"");
+      await loadHeldSales();
+    } catch (e) {
+      toast(`⚠️ ${e.message}`);
+    }
+  };
+
+  const openHeldModal = async () => {
+    await loadHeldSales();
+    setShowHeld(true);
+  };
+
+  const resumeHeldSale = async (held) => {
+    if (cart.length > 0 && !confirm("السلة الحالية فيها أصناف — استرجاع البيعة المعلّقة هيستبدلها. تكمل؟")) return;
+    try {
+      const { error } = await sb.from("held_sales").delete().eq("id", held.id);
+      if (error) throw error;
+      setCart(held.cart || []);
+      setShowHeld(false);
+      toast("تم استرجاع البيعة المعلّقة ✓");
+      await loadHeldSales();
+    } catch (e) {
+      toast(`⚠️ ${e.message}`);
+    }
+  };
+
+  const deleteHeldSale = async (held) => {
+    if (!confirm("حذف البيعة المعلّقة دي نهائيًا؟")) return;
+    const { error } = await sb.from("held_sales").delete().eq("id", held.id);
+    if (!error) {
+      toast("تم الحذف");
+      await loadHeldSales();
+    }
+  };
+
   // ---------- المرتجعات ----------
   const [showReturn, setShowReturn] = useState(false);
   const [returnInvoiceQuery, setReturnInvoiceQuery] = useState("");
@@ -468,8 +529,11 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
               gap: 8,
             }}
           >
-            <button className="btn btn-secondary btn-sm" disabled title="جاي في الباتش الجاية">
+            <button className="btn btn-secondary btn-sm" disabled={cart.length === 0} onClick={holdSale}>
               ⏸️ تعليق البيع
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={openHeldModal}>
+              📋 البيعات المعلّقة {heldSales.length > 0 ? `(${heldSales.length})` : ""}
             </button>
             <button className="btn btn-secondary btn-sm" onClick={openReturnModal}>
               ↩️ مرتجع
@@ -751,6 +815,65 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
               </button>
               <button className="btn btn-primary" onClick={startNewSale}>
                 بيعة جديدة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHeld && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">📋 البيعات المعلّقة</span>
+              <button className="close-btn" onClick={() => setShowHeld(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {heldSales.length === 0 && (
+                <div className="empty-state">
+                  <div className="icon">📋</div>
+                  <p>مفيش بيعات معلّقة دلوقتي</p>
+                </div>
+              )}
+              {heldSales.map((h) => {
+                const total = (h.cart || []).reduce(
+                  (s, l) => s + l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100),
+                  0
+                );
+                return (
+                  <div
+                    key={h.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 4px",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {(h.cart || []).length} صنف — {fc(total)}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text3)" }}>{fd(h.created_at)}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => resumeHeldSale(h)}>
+                        استرجاع
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteHeldSale(h)}>
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowHeld(false)}>
+                إغلاق
               </button>
             </div>
           </div>
