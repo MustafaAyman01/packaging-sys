@@ -538,6 +538,7 @@ export function App({ features, session, profile, trialEndsAt }) {
         toast={toast}
         myRole={myRole}
         refreshData={refreshCloudDataSilently}
+        setPage={setPage}
       />
     ),
     expenses: <Expenses data={data} update={update} toast={toast} lang={lang} />,

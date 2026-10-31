@@ -10,7 +10,7 @@ const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
 const DEFAULT_TAX_RATE = 14;
 
 // Batch 2/3/4 — POS Foundation + Barcode/Cart + Complete Sale.
-export function POS({ org, profile, data, update, toast, myRole, refreshData }) {
+export function POS({ org, profile, data, update, toast, myRole, refreshData, setPage }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [showOpen, setShowOpen] = useState(false);
@@ -25,6 +25,8 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
   const barcodeRef = useRef(null);
 
   const canEditPrice = ["owner", "admin", "accountant", "sales"].includes(myRole);
+  // نفس صلاحيات شاشة الخزنة الموجودة في القائمة الجانبية — مفيش صلاحية جديدة مخترعة
+  const canCloseShift = ["owner", "admin", "accountant"].includes(myRole);
 
   const loadState = async () => {
     setLoading(true);
@@ -538,7 +540,12 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData }) 
             <button className="btn btn-secondary btn-sm" onClick={openReturnModal}>
               ↩️ مرتجع
             </button>
-            <button className="btn btn-secondary btn-sm" disabled title="جاي في الباتش الجاية">
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={!canCloseShift}
+              title={canCloseShift ? "الانتقال لشاشة قفل الخزنة" : "قفل الخزنة متاح للمالك/المدير/المحاسب فقط"}
+              onClick={() => setPage && setPage("cash_register")}
+            >
               🔒 قفل الخزنة
             </button>
           </div>
