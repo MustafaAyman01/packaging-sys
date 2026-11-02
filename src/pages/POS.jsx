@@ -357,6 +357,62 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setBusy(false);
   };
 
+  // ---------- اختصارات الكيبورد ----------
+  // listener واحد بس، وبيقرا آخر نسخة من الحالة والدوال من الـ ref عشان ميمسكش state قديم.
+  const shortcutRef = useRef({});
+  shortcutRef.current = {
+    session, showPay, showReturn, showHeld, receipt, cart, canEditPrice, saleBusy,
+    openPayModal, completeSale, startNewSale,
+    closePay: () => setShowPay(false),
+    closeReturn: () => setShowReturn(false),
+    closeHeld: () => setShowHeld(false),
+  };
+  useEffect(() => {
+    const focusEl = (el) => {
+      if (el) {
+        el.focus();
+        if (el.select) el.select();
+      }
+    };
+    const onKey = (e) => {
+      const s = shortcutRef.current;
+      if (!s.session) return;
+      const anyModal = s.showPay || s.showReturn || s.showHeld || s.receipt;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (s.showPay) s.closePay();
+        else if (s.showReturn) s.closeReturn();
+        else if (s.showHeld) s.closeHeld();
+        else if (s.receipt) s.startNewSale();
+        else {
+          setBarcodeValue("");
+          barcodeRef.current?.focus();
+        }
+        return;
+      }
+      if (!/^F(2|4|6|8|9)$/.test(e.key)) return;
+      e.preventDefault();
+
+      if (e.key === "F9") {
+        if (s.showPay && !s.saleBusy) s.completeSale();
+        return;
+      }
+      if (e.key === "F8") {
+        if (!anyModal && s.cart.length > 0) s.openPayModal();
+        return;
+      }
+      if (anyModal) return;
+      const last = s.cart[s.cart.length - 1];
+      if (e.key === "F2") focusEl(document.querySelector("#pos-search input"));
+      if (e.key === "F4" && last) focusEl(document.querySelector(`[data-pos-qty="${last.product_id}"]`));
+      if (e.key === "F6" && last && s.canEditPrice)
+        focusEl(document.querySelector(`[data-pos-disc="${last.product_id}"]`));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (loading) {
     return (
       <div
@@ -576,7 +632,11 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
               />
             </form>
 
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>
+              F2 بحث · F4 كمية · F6 خصم · F8 دفع · F9 إتمام البيع · Esc إلغاء/رجوع
+            </div>
+
+            <div id="pos-search" style={{ marginBottom: 14 }}>
               <ProductPicker
                 products={data.products}
                 units={data.units}
@@ -613,6 +673,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                     </td>
                     <td style={{ width: 90 }}>
                       <input
+                        data-pos-qty={l.product_id}
                         type="number"
                         min="1"
                         value={l.quantity}
@@ -630,6 +691,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                     </td>
                     <td style={{ width: 80 }}>
                       <input
+                        data-pos-disc={l.product_id}
                         type="number"
                         min="0"
                         max="100"
