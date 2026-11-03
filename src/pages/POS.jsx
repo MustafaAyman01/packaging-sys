@@ -137,6 +137,22 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
 
   const openPayModal = async () => {
     if (cart.length === 0) return;
+    // تحذير نقص المخزون (UX بس): البيع مسموح دايمًا، والـ RPC بتثبّت المخزون عند صفر
+    const shortages = cart
+      .map((l) => {
+        const sl = data.stock_levels.find((x) => x.product_id === l.product_id);
+        return { name: l.name, have: sl ? sl.quantity : 0, need: l.quantity };
+      })
+      .filter((x) => x.need > x.have);
+    if (
+      shortages.length > 0 &&
+      !confirm(
+        `⚠️ المخزون غير كافٍ للأصناف التالية:\n${shortages
+          .map((x) => `${x.name}: المتاح ${x.have} / المطلوب ${x.need}`)
+          .join("\n")}\n\nهل تريد الاستمرار في البيع؟ (المخزون هيقف عند صفر)`
+      )
+    )
+      return;
     const defaultClientId = await ensureDefaultCashClient();
     setClientId(defaultClientId);
     setPaidAmount(String(Math.round(cartTotal * 100) / 100));
