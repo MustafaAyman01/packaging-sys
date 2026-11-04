@@ -526,7 +526,16 @@ export function App({ features, session, profile, trialEndsAt }) {
     invoices: <Invoices data={data} update={update} updateStock={updateStock} toast={toast} org={org} lang={lang} />,
     clients: <Clients data={data} update={update} toast={toast} org={org} lang={lang} />,
     suppliers: <Suppliers data={data} update={update} toast={toast} org={org} lang={lang} />,
-    payments: <Payments data={data} update={update} toast={toast} lang={lang} />,
+    payments: (
+      <Payments
+        data={data}
+        update={update}
+        toast={toast}
+        lang={lang}
+        profile={profile}
+        refreshData={refreshCloudDataSilently}
+      />
+    ),
     cash_vouchers: <CashVouchers data={data} update={update} toast={toast} lang={lang} />,
     cash_register: <CashRegister toast={toast} />,
     pos: (

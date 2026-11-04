@@ -3,14 +3,23 @@ import { generateId, fc, fd, today } from "../utils/format";
 import { PAYMENT_METHODS } from "../constants/labels";
 import { getPartyBalance } from "../utils/balance";
 import { t } from "../i18n";
+import { sb, SUPABASE_ENABLED } from "../services/supabaseClient";
+import { logActivityRows } from "../services/sync";
 
-export function Payments({ data, update, toast, lang }) {
+export function Payments({ data, update, toast, lang, profile, refreshData }) {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("invoice"); // "invoice" | "account"
   const [editingPayment, setEditingPayment] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // مفتاح idempotency ثابت طول فتح المودال (بيتصفّر مع كل فتح/قفل) — عشان ضغطتين أو retry
+  // بعد انقطاع النت مايسجلوش الدفعة مرتين، والدفعة الجديدة بعد كده تاخد مفتاح جديد.
+  const paymentKeyRef = useRef(null);
+  useEffect(() => {
+    paymentKeyRef.current = null;
+  }, [showModal]);
   const invoicePickerRef = useRef(null);
   useEffect(() => {
     const onDocClick = (e) => {
@@ -84,7 +93,7 @@ export function Payments({ data, update, toast, lang }) {
       unappliedAmount: remaining,
     };
   };
-  const savePayment = () => {
+  const savePaymentLocal = () => {
     if (mode === "invoice") {
       if (!form.invoice_id || !form.amount) {
         toast("لازم تحدد الفاتورة والمبلغ");
@@ -188,6 +197,124 @@ export function Payments({ data, update, toast, lang }) {
       reference_number: "",
       notes: "",
     });
+  };
+  const savePayment = async () => {
+    // وضع Offline (من غير Supabase): نفس السلوك القديم بالظبط
+    if (!SUPABASE_ENABLED) return savePaymentLocal();
+    if (saving) return;
+
+    let allocations = [];
+    let partyType = null;
+    let partyId = null;
+    if (mode === "invoice") {
+      if (!form.invoice_id || !form.amount) {
+        toast("لازم تحدد الفاتورة والمبلغ");
+        return;
+      }
+      allocations = [{ id: generateId(), invoice_id: form.invoice_id, amount: +form.amount }];
+    } else {
+      if (!form.party_id || !form.amount || +form.amount <= 0) {
+        toast("لازم تحدد العميل/المورد والمبلغ");
+        return;
+      }
+      partyType = form.party_type;
+      partyId = form.party_id;
+      const { newPayments } = distributePaymentAcrossInvoices(form.party_type, form.party_id, +form.amount, {});
+      allocations = newPayments.map((p) => ({ id: p.id, invoice_id: p.invoice_id, amount: p.amount }));
+    }
+
+    if (!paymentKeyRef.current) paymentKeyRef.current = generateId();
+    setSaving(true);
+    try {
+      // الدفعة + تحديث الفاتورة (والرصيد غير المخصص) في Transaction واحدة على السيرفر
+      const { data: result, error } = await sb.rpc("record_payment", {
+        p_idempotency_key: paymentKeyRef.current,
+        p_party_type: partyType,
+        p_party_id: partyId,
+        p_amount: +form.amount,
+        p_payment_date: form.payment_date,
+        p_method: form.method,
+        p_reference_number: form.reference_number || "",
+        p_notes: form.notes || "",
+        p_allocations: allocations,
+      });
+      if (error) throw error;
+
+      const rows = result.payments || [];
+      const unapplied = rows.filter((r) => !r.invoice_id).reduce((s, r) => s + (+r.amount || 0), 0);
+
+      if (result.status === "applied") {
+        // نفس الأثر التدقيقي اللي كان بيتسجل قبل التحويل لـ RPC
+        const meta = {
+          payment_date: form.payment_date,
+          method: form.method,
+          reference_number: form.reference_number || "",
+          notes: form.notes || "",
+          party_type: partyType,
+          party_id: partyId,
+        };
+        const logs = rows.map((r) => ({
+          action: "create",
+          table_name: "payments",
+          record_id: r.payment_id,
+          details: {
+            label: `دفعة بمبلغ ${r.amount}`,
+            old: null,
+            new: { invoice_id: r.invoice_id, amount: r.amount, ...meta },
+          },
+        }));
+        rows
+          .filter((r) => r.invoice_id)
+          .forEach((r) => {
+            const inv = data.invoices.find((i) => i.id === r.invoice_id);
+            if (!inv) return;
+            const newPaid = (inv.paid_amount || 0) + (+r.amount || 0);
+            logs.push({
+              action: "update",
+              table_name: "invoices",
+              record_id: inv.id,
+              details: {
+                label: inv.invoice_number,
+                old: { paid_amount: inv.paid_amount, status: inv.status },
+                new: { paid_amount: newPaid, status: newPaid >= inv.total_amount ? "paid" : "partial" },
+              },
+            });
+          });
+        logActivityRows(profile?.org_id, profile?.id, logs);
+      }
+
+      if (result.status === "already_applied") {
+        toast("تم رصد هذه الدفعة مسبقًا ✓");
+      } else if (mode !== "invoice" && unapplied > 0.01) {
+        toast(
+          `تم توزيع ${fc(+form.amount - unapplied)} على الفواتير المستحقة، وتسجيل ${fc(unapplied)} كمقدم غير مخصص`
+        );
+      } else if (mode !== "invoice") {
+        toast("تم تسجيل الدفعة وتوزيعها على الفواتير المستحقة تلقائيًا ✓");
+      } else {
+        toast("تم تسجيل الدفعة ✓");
+      }
+
+      setShowModal(false);
+      setInvoiceSearch("");
+      setInvoicePickerOpen(false);
+      setForm({
+        invoice_id: "",
+        party_type: "client",
+        party_id: "",
+        amount: "",
+        payment_date: today(),
+        method: "cash",
+        reference_number: "",
+        notes: "",
+      });
+      refreshData && refreshData();
+    } catch (e) {
+      toast(`⚠️ ${e.message}`);
+      // لو السبب بيانات قديمة (مثلاً فاتورة اتدفعت من تاب تاني)، نحدّث عشان المحاولة الجاية تبقى صح
+      refreshData && refreshData();
+    }
+    setSaving(false);
   };
   const partyName = (p) => {
     if (p.party_id) {
@@ -732,8 +859,8 @@ export function Payments({ data, update, toast, lang }) {
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                 {t("actions", "cancel", lang)}
               </button>
-              <button className="btn btn-primary" onClick={savePayment}>
-                تسجيل
+              <button className="btn btn-primary" disabled={saving} onClick={savePayment}>
+                {saving ? "جاري التسجيل..." : "تسجيل"}
               </button>
             </div>
           </div>

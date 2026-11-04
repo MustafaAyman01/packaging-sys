@@ -378,6 +378,17 @@ function itemLabel(item, tableName) {
     "سجل بيانات"
   );
 }
+// تسجيل في سجل الأنشطة لعمليات بتتم عن طريق RPC مباشرة (مش عن طريق syncTableChange)،
+// عشان نحافظ على نفس الأثر التدقيقي اللي كان موجود قبل التحويل لـ RPC.
+// rows: [{ action, table_name, record_id, details }]
+export function logActivityRows(orgId, userId, rows) {
+  if (!sb || !orgId || !rows?.length) return;
+  sb.from("activity_log")
+    .insert(rows.map((r) => ({ org_id: orgId, user_id: userId || null, ...r })))
+    .then(({ error }) => {
+      if (error) console.error("activity_log insert error", error);
+    });
+}
 export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
   const cfg = SYNC_TABLES[key];
   if (!cfg) return [];
