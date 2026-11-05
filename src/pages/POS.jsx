@@ -168,6 +168,8 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
       return;
     }
     const paid = +paidAmount || 0;
+    // المبلغ المسجّل على الفاتورة مايزيدش عن إجماليها — الزيادة هي الباقي للعميل (Change) وبتتعرض بس
+    const paidToRecord = Math.min(paid, cartTotal);
     setSaleBusy(true);
     try {
       const { data: result, error } = await sb.rpc("create_invoice_with_effects", {
@@ -186,7 +188,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
           unit_price: l.unit_price,
           discount_percent: l.discount_percent || 0,
         })),
-        p_payment: paid > 0 ? { amount: paid, method: payMethod } : null,
+        p_payment: paidToRecord > 0 ? { amount: paidToRecord, method: payMethod } : null,
       });
       if (error) throw error;
 
