@@ -61,9 +61,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
 
   // الفوكس يفضل على حقل الباركود دايمًا — عشان أي سكانر (USB/Bluetooth بيشتغل
   // كـ keyboard) يضيف المنتج من غير ما الكاشير يدوس بالماوس خالص
-  useEffect(() => {
-    if (session) barcodeRef.current?.focus();
-  }, [session, cart]);
 
   const addProductToCart = (product) => {
     if (!product || !product.is_active) return;
@@ -375,6 +372,12 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setBusy(false);
   };
 
+  // الفوكس يرجع لحقل الباركود لما يتضاف/يتشال صنف، أو لما مودال يتقفل — مش لما الكاشير بيكتب في
+  // كمية/سعر/خصم (كان بيتسحب منه الفوكس بعد أول رقم لأن الـ effect كان معتمد على الـ cart كله).
+  useEffect(() => {
+    if (session && !showPay && !showReturn && !showHeld && !receipt) barcodeRef.current?.focus();
+  }, [session, cart.length, showPay, showReturn, showHeld, receipt]);
+
   // ---------- اختصارات الكيبورد ----------
   // listener واحد بس، وبيقرا آخر نسخة من الحالة والدوال من الـ ref عشان ميمسكش state قديم.
   const shortcutRef = useRef({});
@@ -651,7 +654,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
             </form>
 
             <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>
-              F2 بحث · F4 كمية · F6 خصم · F8 دفع · F9 إتمام البيع · Esc إلغاء/رجوع
+              F2 بحث · F4 كمية · F6 خصم · F8 دفع · F9 إتمام البيع · Esc إلغاء/رجوع · Enter بعد التعديل = رجوع للباركود
             </div>
 
             <div id="pos-search" style={{ marginBottom: 14 }}>
@@ -670,7 +673,15 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
               />
             </div>
 
-            <table>
+            <table
+              onKeyDown={(e) => {
+                // Enter بعد تعديل كمية/سعر/خصم = رجوع للباركود عشان الصنف الجاي
+                if (e.key === "Enter" && e.target.tagName === "INPUT") {
+                  e.preventDefault();
+                  barcodeRef.current?.focus();
+                }
+              }}
+            >
               <thead>
                 <tr>
                   <th>المنتج</th>
