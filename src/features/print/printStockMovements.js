@@ -1,4 +1,5 @@
 import { fc, fd, today } from "../../utils/format";
+import { esc } from "./escape";
 
 const TYPE_LABELS = {
   in: "⬇ وارد",
@@ -18,13 +19,13 @@ export function printStockMovements(movements, products, units, org) {
       return `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
       <td style="text-align:center">${fd(m.created_at)}</td>
-      <td><strong>${prod?.name || "—"}</strong></td>
-      <td style="text-align:center"><code>${prod?.sku || "—"}</code></td>
-      <td style="text-align:center">${label}</td>
-      <td style="text-align:center;font-weight:700">${m.quantity.toLocaleString()} ${unit?.abbreviation || ""}</td>
+      <td><strong>${esc(prod?.name) || "—"}</strong></td>
+      <td style="text-align:center"><code>${esc(prod?.sku) || "—"}</code></td>
+      <td style="text-align:center">${esc(label)}</td>
+      <td style="text-align:center;font-weight:700">${m.quantity.toLocaleString()} ${esc(unit?.abbreviation)}</td>
       <td style="text-align:center">${m.unit_cost ? fc(m.unit_cost) : "—"}</td>
       <td style="text-align:center">${m.unit_cost ? fc(m.quantity * m.unit_cost) : "—"}</td>
-      <td style="color:#6b6456;font-size:11px">${m.notes || "—"}</td>
+      <td style="color:#6b6456;font-size:11px">${esc(m.notes) || "—"}</td>
     </tr>`;
     })
     .join("");
@@ -46,7 +47,7 @@ td{padding:6px;border-bottom:1px solid #e5e1d8}
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>سجل حركات المخزون</h1>
 <div class="meta">
-  <span>${org?.name_ar || org?.name || "المنشأة"}</span>
+  <span>${esc(org?.name_ar || org?.name || "المنشأة")}</span>
   <span>تاريخ الطباعة: ${fd(today())} — عدد الحركات: ${movements.length}</span>
 </div>
 <table><thead><tr>

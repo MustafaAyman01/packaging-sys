@@ -1,20 +1,21 @@
 import { fc, fd } from "../../utils/format";
+import { esc } from "./escape";
 
 export function printInvoice(inv, data, org) {
   const companyName = org?.name_ar || org?.name || "مصنع الملابس";
   const companySub = "مصنع وتوريد الملابس الجاهزة";
   const companyLogoHtml = org?.logo_url
-    ? `<img src="${org.logo_url}" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
+    ? `<img src="${esc(org.logo_url)}" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
     : "👖";
   const footerLogoHtml = org?.logo_url
-    ? `<img src="${org.logo_url}" alt="logo" style="height:16px;vertical-align:middle;border-radius:3px;margin-left:4px">`
+    ? `<img src="${esc(org.logo_url)}" alt="logo" style="height:16px;vertical-align:middle;border-radius:3px;margin-left:4px">`
     : "👖";
   // بيانات تواصل الشركة اللي هتظهر تحت اسمها في الفاتورة، كل واحدة بس لو مفعّلة من الإعدادات وليها قيمة فعلاً
   const companyContactLines = [
-    org?.show_address_on_invoice && org?.address ? `📍 ${org.address}` : null,
-    org?.show_phone_on_invoice && org?.phone ? `📞 هاتف: ${org.phone}` : null,
-    org?.show_whatsapp_on_invoice && org?.whatsapp_phone ? `💬 واتساب: ${org.whatsapp_phone}` : null,
-    org?.show_tax_number_on_invoice && org?.tax_number ? `🧾 الرقم الضريبي: ${org.tax_number}` : null,
+    org?.show_address_on_invoice && org?.address ? `📍 ${esc(org.address)}` : null,
+    org?.show_phone_on_invoice && org?.phone ? `📞 هاتف: ${esc(org.phone)}` : null,
+    org?.show_whatsapp_on_invoice && org?.whatsapp_phone ? `💬 واتساب: ${esc(org.whatsapp_phone)}` : null,
+    org?.show_tax_number_on_invoice && org?.tax_number ? `🧾 الرقم الضريبي: ${esc(org.tax_number)}` : null,
   ].filter(Boolean);
   const companyContactHtml = companyContactLines.map((line) => `<div>${line}</div>`).join("");
   const client = data.clients.find((c) => c.id === inv.client_id);
@@ -66,9 +67,9 @@ export function printInvoice(inv, data, org) {
       const lineTotal = item.quantity * item.unit_price * (1 - item.discount_percent / 100);
       return `<tr>
       <td style="text-align:center;color:#6b6456">${serial}</td>
-      <td><strong>${displayName}</strong>${displaySku ? `<br><span style="font-size:10px;color:#9c9080">${displaySku}</span>` : ""}</td>
+      <td><strong>${esc(displayName)}</strong>${displaySku ? `<br><span style="font-size:10px;color:#9c9080">${esc(displaySku)}</span>` : ""}</td>
       <td style="text-align:center">${item.quantity.toLocaleString("en-EG")}</td>
-      <td style="text-align:center;color:#6b6456">${unit?.abbreviation || ""}</td>
+      <td style="text-align:center;color:#6b6456">${esc(unit?.abbreviation)}</td>
       <td style="text-align:center">${fc(item.unit_price)}</td>
       <td style="text-align:center;color:${item.discount_percent > 0 ? "#16a34a" : "#9c9080"}">${item.discount_percent > 0 ? item.discount_percent + "%" : "—"}</td>
       <td style="text-align:center;font-weight:700;color:#1a1814">${fc(lineTotal)}</td>
@@ -80,7 +81,7 @@ export function printInvoice(inv, data, org) {
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>فاتورة ${inv.invoice_number}</title>
+<title>فاتورة ${esc(inv.invoice_number)}</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
@@ -155,13 +156,13 @@ export function printInvoice(inv, data, org) {
     <div class="brand">
       <div class="brand-icon">${companyLogoHtml}</div>
       <div>
-        <div class="brand-name">${companyName}</div>
+        <div class="brand-name">${esc(companyName)}</div>
         <div class="brand-sub">${companySub}</div>
       </div>
     </div>
     <div class="inv-meta">
       <div class="inv-type">${inv.type === "sale" ? "فاتورة مبيعات" : "فاتورة مشتريات"}</div>
-      <div class="inv-num">${inv.invoice_number}</div>
+      <div class="inv-num">${esc(inv.invoice_number)}</div>
       <div class="inv-dates">
         <span>تاريخ الفاتورة: <strong>${fd(inv.invoice_date)}</strong></span><br>
         <span>تاريخ الاستحقاق: <strong>${fd(inv.due_date)}</strong></span>
@@ -174,16 +175,16 @@ export function printInvoice(inv, data, org) {
   <div class="parties">
     <div class="party">
       <div class="party-lbl">${inv.type === "sale" ? "البائع" : "المشتري"}</div>
-      <div class="party-name">${companyName}</div>
-      <div class="party-detail">${companyContactHtml || companySub}</div>
+      <div class="party-name">${esc(companyName)}</div>
+      <div class="party-detail">${companyContactHtml || esc(companySub)}</div>
     </div>
     <div class="party">
       <div class="party-lbl">${inv.type === "sale" ? "المشتري" : "البائع"}</div>
-      <div class="party-name">${party?.name || "—"}</div>
+      <div class="party-name">${esc(party?.name) || "—"}</div>
       <div class="party-detail">
-        ${party?.phone ? `<span>📞 ${party.phone}</span><br>` : ""}
-        ${party?.address ? `<span>📍 ${party.address}</span><br>` : ""}
-        ${party?.tax_number ? `<span>رقم ضريبي: ${party.tax_number}</span>` : ""}
+        ${party?.phone ? `<span>📞 ${esc(party.phone)}</span><br>` : ""}
+        ${party?.address ? `<span>📍 ${esc(party.address)}</span><br>` : ""}
+        ${party?.tax_number ? `<span>رقم ضريبي: ${esc(party.tax_number)}</span>` : ""}
       </div>
     </div>
   </div>
@@ -208,7 +209,7 @@ export function printInvoice(inv, data, org) {
   <div class="bottom">
     <div class="notes-box">
       <div class="notes-lbl">ملاحظات</div>
-      <div>${inv.notes || "—"}</div>
+      <div>${esc(inv.notes) || "—"}</div>
     </div>
     <div class="totals">
       <div class="t-row"><span class="t-label">المجموع الفرعي</span><span class="t-val">${fc(inv.subtotal)}</span></div>
@@ -231,7 +232,7 @@ export function printInvoice(inv, data, org) {
   <!-- FOOTER -->
   <div class="footer">
     <div>
-      <div class="footer-logo">${footerLogoHtml} ${companyName}</div>
+      <div class="footer-logo">${footerLogoHtml} ${esc(companyName)}</div>
       <div>${companySub}</div>
     </div>
     <div style="text-align:center;color:#d4cfc4;font-size:18px">· · ·</div>

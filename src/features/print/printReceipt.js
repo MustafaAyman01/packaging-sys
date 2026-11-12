@@ -1,4 +1,5 @@
 import { fc, fd } from "../../utils/format";
+import { esc } from "./escape";
 
 // قالب طباعة إيصال مخصوص لطابعات الريسيت الحرارية (80mm) — منفصل تمامًا عن
 // قالب A4 الموجود في printInvoice.js، لأن التصميمين مختلفين جذريًا (عمود واحد
@@ -16,7 +17,7 @@ export function printReceipt(invoice, items, org) {
     .map(
       (it) => `
     <div class="line">
-      <div class="name">${it.name || ""}</div>
+      <div class="name">${esc(it.name)}</div>
       <div class="qty-price">
         <span>${(it.quantity || 0).toLocaleString("en-EG")} × ${fc(it.unit_price)}</span>
         <span class="line-total">${fc(it.total_price)}</span>
@@ -31,7 +32,7 @@ export function printReceipt(invoice, items, org) {
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="utf-8">
-<title>إيصال ${invoice.invoice_number || ""}</title>
+<title>إيصال ${esc(invoice.invoice_number)}</title>
 <style>
   @page { size: 80mm auto; margin: 3mm 4mm; }
   * { box-sizing: border-box; }
@@ -60,11 +61,11 @@ export function printReceipt(invoice, items, org) {
 </head>
 <body>
   <div class="center">
-    <div class="company-name">${companyName}</div>
-    ${org?.phone ? `<div class="company-sub">${org.phone}</div>` : ""}
+    <div class="company-name">${esc(companyName)}</div>
+    ${org?.phone ? `<div class="company-sub">${esc(org.phone)}</div>` : ""}
   </div>
   <div class="divider"></div>
-  <div class="meta-row"><span>رقم الفاتورة</span><span>${invoice.invoice_number || ""}</span></div>
+  <div class="meta-row"><span>رقم الفاتورة</span><span>${esc(invoice.invoice_number)}</span></div>
   <div class="meta-row"><span>التاريخ</span><span>${fd(invoice.invoice_date || new Date())}</span></div>
   <div class="divider"></div>
 

@@ -1,4 +1,5 @@
 import { fc, fd, today } from "../../utils/format";
+import { esc } from "./escape";
 
 // محضر جرد مخزون احترافي: بيوضح لكل منتج الرصيد الدفتري، الجرد الفعلي، الفرق،
 // وقيمة الفرق بسعر التكلفة، بالإضافة لتوقيعات معتمدة في الآخر.
@@ -12,9 +13,9 @@ export function printStocktakeSheet(rows, org, meta) {
       const diffColor = !hasCount ? "#9c9080" : r.diff > 0 ? "#16a34a" : r.diff < 0 ? "#dc2626" : "#6b6456";
       return `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${r.name}</strong></td>
-      <td style="text-align:center"><code>${r.sku || "—"}</code></td>
-      <td style="text-align:center">${r.unit || "—"}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td style="text-align:center"><code>${esc(r.sku) || "—"}</code></td>
+      <td style="text-align:center">${esc(r.unit) || "—"}</td>
       <td style="text-align:center">${r.system.toLocaleString()}</td>
       <td style="text-align:center;font-weight:700">${hasCount ? Number(r.counted).toLocaleString() : "—"}</td>
       <td style="text-align:center;font-weight:700;color:${diffColor}">${
@@ -47,8 +48,8 @@ td{padding:6px;border-bottom:1px solid #e5e1d8}
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>محضر جرد مخزون</h1>
 <div class="meta">
-  <span>${org?.name_ar || org?.name || "المنشأة"}</span>
-  <span>تاريخ الجرد: ${fd(meta?.date || today())} — رقم الجلسة: ${meta?.sessionLabel || "—"}</span>
+  <span>${esc(org?.name_ar || org?.name || "المنشأة")}</span>
+  <span>تاريخ الجرد: ${fd(meta?.date || today())} — رقم الجلسة: ${esc(meta?.sessionLabel) || "—"}</span>
 </div>
 <table><thead><tr>
   <th>#</th><th>المنتج</th><th>الكود</th><th>الوحدة</th>

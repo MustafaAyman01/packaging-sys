@@ -1,4 +1,5 @@
 import { fc, fd, today } from "../../utils/format";
+import { esc } from "./escape";
 
 export function printPayrollSheet(month, payments, employees, org) {
   const rows = payments
@@ -7,7 +8,7 @@ export function printPayrollSheet(month, payments, employees, org) {
       const net = sp.net_amount ?? sp.amount;
       return `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${emp?.name || "—"}</strong></td>
+      <td><strong>${esc(emp?.name) || "—"}</strong></td>
       <td style="text-align:center">${fc(sp.base_salary ?? sp.amount)}</td>
       <td style="text-align:center;color:#16a34a">${sp.overtime_amount > 0 ? "+ " + fc(sp.overtime_amount) : "—"}</td>
       <td style="text-align:center;color:#dc2626">${sp.deduction_amount > 0 ? "- " + fc(sp.deduction_amount) : "—"}</td>
@@ -20,7 +21,7 @@ export function printPayrollSheet(month, payments, employees, org) {
   const totalNet = payments.reduce((s, sp) => s + (sp.net_amount ?? sp.amount), 0);
   const w = window.open("", "_blank");
   w.document.write(`<!DOCTYPE html>
-<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مرتبات ${month}</title>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف مرتبات ${esc(month)}</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -35,8 +36,8 @@ td{padding:7px 8px;border-bottom:1px solid #e5e1d8}
 @media print{.print-btn{display:none}}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
-<h1>كشف مرتبات شهر ${month}</h1>
-<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — عدد الموظفين المصروف لهم: ${payments.length} — تاريخ الطباعة: ${fd(today())}</div>
+<h1>كشف مرتبات شهر ${esc(month)}</h1>
+<div class="sub">${esc(org?.name_ar || org?.name || "مصنع الملابس")} — عدد الموظفين المصروف لهم: ${payments.length} — تاريخ الطباعة: ${fd(today())}</div>
 <table><thead><tr><th>#</th><th>الموظف</th><th>الأساسي</th><th>أوفر تايم</th><th>خصم حضور</th><th>جزاءات</th><th>سلفة</th><th>الصافي</th></tr></thead>
 <tbody>${rows}</tbody></table>
 <div class="final">إجمالي المرتبات الصافية المصروفة: ${fc(totalNet)}</div>

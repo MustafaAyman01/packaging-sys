@@ -1,4 +1,5 @@
 import { fc, fd, today } from "../../utils/format";
+import { esc } from "./escape";
 
 export function buildStatementEntries(party, partyType, data) {
   // partyType: "client" -> sale invoices, "supplier" -> purchase invoices
@@ -57,7 +58,7 @@ export function printStatement(party, partyType, entries, org) {
     .map(
       (e) => `<tr>
     <td>${fd(e.date)}</td>
-    <td>${e.label}</td>
+    <td>${esc(e.label)}</td>
     <td style="text-align:center">${e.debit > 0 ? fc(e.debit) : "—"}</td>
     <td style="text-align:center">${e.credit > 0 ? fc(e.credit) : "—"}</td>
     <td style="text-align:center;font-weight:700">${fc(e.balance)}</td>
@@ -66,7 +67,7 @@ export function printStatement(party, partyType, entries, org) {
     .join("");
   const w = window.open("", "_blank");
   w.document.write(`<!DOCTYPE html>
-<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title} - ${party.name}</title>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title} - ${esc(party.name)}</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -81,8 +82,8 @@ td{padding:8px 10px;border-bottom:1px solid #e5e1d8}
 @media print{.print-btn{display:none}}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
-<h1>${title}: ${party.name}</h1>
-<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — تاريخ الطباعة: ${fd(today())}</div>
+<h1>${title}: ${esc(party.name)}</h1>
+<div class="sub">${esc(org?.name_ar || org?.name || "مصنع الملابس")} — تاريخ الطباعة: ${fd(today())}</div>
 <table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead>
 <tbody>${rows}</tbody></table>
 <div class="final">الرصيد النهائي: ${fc(Math.abs(finalBalance))} ${

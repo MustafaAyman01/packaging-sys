@@ -1,12 +1,13 @@
 import { fc, fd, today } from "../../utils/format";
+import { esc } from "./escape";
 
 export function printDebtsSheet(clientDebts, supplierDebts, clientCredits, supplierCredits, org) {
   const clientRows = clientDebts
     .map(
       (c, i) => `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${c.name}</strong></td>
-      <td style="text-align:center">${c.phone || "—"}</td>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td style="text-align:center">${esc(c.phone) || "—"}</td>
       <td style="text-align:center;font-weight:700;color:#dc2626">${fc(c.balance)}</td>
     </tr>`
     )
@@ -15,8 +16,8 @@ export function printDebtsSheet(clientDebts, supplierDebts, clientCredits, suppl
     .map(
       (s, i) => `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${s.name}</strong></td>
-      <td style="text-align:center">${s.phone || "—"}</td>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td style="text-align:center">${esc(s.phone) || "—"}</td>
       <td style="text-align:center;font-weight:700;color:#c47f0a">${fc(s.balance)}</td>
     </tr>`
     )
@@ -25,8 +26,8 @@ export function printDebtsSheet(clientDebts, supplierDebts, clientCredits, suppl
     .map(
       (c, i) => `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${c.name}</strong></td>
-      <td style="text-align:center">${c.phone || "—"}</td>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td style="text-align:center">${esc(c.phone) || "—"}</td>
       <td style="text-align:center;font-weight:700;color:#16a34a">${fc(c.balance)}</td>
     </tr>`
     )
@@ -35,8 +36,8 @@ export function printDebtsSheet(clientDebts, supplierDebts, clientCredits, suppl
     .map(
       (s, i) => `<tr>
       <td style="text-align:center;color:#6b6456">${i + 1}</td>
-      <td><strong>${s.name}</strong></td>
-      <td style="text-align:center">${s.phone || "—"}</td>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td style="text-align:center">${esc(s.phone) || "—"}</td>
       <td style="text-align:center;font-weight:700;color:#16a34a">${fc(s.balance)}</td>
     </tr>`
     )
@@ -64,7 +65,7 @@ td{padding:7px 8px;border-bottom:1px solid #e5e1d8}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ طباعة</button>
 <h1>كشف مديونيات شامل</h1>
-<div class="sub">${org?.name_ar || org?.name || "مصنع الملابس"} — تاريخ الطباعة: ${fd(today())}</div>
+<div class="sub">${esc(org?.name_ar || org?.name || "مصنع الملابس")} — تاريخ الطباعة: ${fd(today())}</div>
 <h2>مستحقات على العملاء (مدين)</h2>
 <table><thead><tr><th>#</th><th>العميل</th><th>الهاتف</th><th>المبلغ المستحق</th></tr></thead>
 <tbody>${clientRows || `<tr><td colspan="4" style="text-align:center;color:#9c9080">لا توجد مديونيات</td></tr>`}</tbody></table>
