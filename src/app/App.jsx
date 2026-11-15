@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Toast } from "../components/Toast";
 import { Dashboard } from "../pages/Dashboard";
 import { Products } from "../pages/Products";
@@ -21,8 +21,16 @@ import { sb, SUPABASE_ENABLED } from "../services/supabaseClient";
 import { loadData, saveData } from "../services/storage";
 import { EMPTY_DATA_TEMPLATE } from "../constants/emptyDataTemplate";
 import { INITIAL_DATA } from "../constants/initialData";
-import { fetchCloudData, pushInitialData, syncTableChange, SYNC_TABLES } from "../services/sync";
+import {
+  fetchCloudData,
+  fetchStockLevels,
+  logActivityRows,
+  pushInitialData,
+  syncTableChange,
+  SYNC_TABLES,
+} from "../services/sync";
 import { generateId, today } from "../utils/format";
+import { applyStockDeltaLocal } from "../utils/stock";
 import { t, LANG_STORAGE_KEY } from "../i18n";
 
 export function App({ features, session, profile, trialEndsAt }) {
@@ -194,7 +202,55 @@ export function App({ features, session, profile, trialEndsAt }) {
     const sl = data.stock_levels.find((s) => s.product_id === pid);
     return sl ? sl.quantity : 0;
   };
-  const updateStock = (pid, delta) =>
+  // ---------- المخزون: كل تعديل بيتنفذ كـ delta ذرّي على السيرفر ----------
+  // الطريقة القديمة (updateStockLegacy) كانت بتحسب الرصيد الجديد من نسخة المتصفح وتكتبه كرقم مطلق،
+  // فكانت ممكن تمسح أي تعديل حصل في نفس اللحظة من تاب تاني أو من بيع POS. دلوقتي السيرفر هو اللي
+  // بيجمع الـ delta (apply_stock_delta) والواجهة بتتحدّث فورًا بشكل متفائل وبعدها بتتزامن مع الرصيد الحقيقي.
+  const stockPendingRef = useRef(0);
+  const resyncStockLevels = async () => {
+    try {
+      const rows = await fetchStockLevels(profile.org_id);
+      setData((d) => ({ ...d, stock_levels: rows }));
+    } catch (e) {
+      console.error("stock resync error", e);
+    }
+  };
+  const updateStock = (pid, delta) => {
+    // وضع Offline أو قبل تحميل بيانات السحابة: نفس السلوك القديم
+    if (!SUPABASE_ENABLED || !profile || !cloudReady) return updateStockLegacy(pid, delta);
+    setData((d) => ({ ...d, stock_levels: applyStockDeltaLocal(d.stock_levels, pid, delta, generateId) }));
+    stockPendingRef.current += 1;
+    const finish = () => {
+      stockPendingRef.current -= 1;
+      if (stockPendingRef.current === 0) resyncStockLevels();
+    };
+    sb.rpc("apply_stock_delta", { p_product_id: pid, p_delta: delta }).then(
+      ({ data: res, error }) => {
+        if (error) {
+          toast(`⚠️ خطأ مزامنة المخزون: ${error.message}`);
+        } else if (res) {
+          logActivityRows(profile.org_id, profile.id, [
+            {
+              action: "update",
+              table_name: "stock_levels",
+              record_id: res.id,
+              details: {
+                label: "تحديث رصيد المخزون",
+                old: { product_id: pid, quantity: res.previous },
+                new: { product_id: pid, quantity: res.quantity },
+              },
+            },
+          ]);
+        }
+        finish();
+      },
+      (e) => {
+        toast(`⚠️ خطأ مزامنة المخزون: ${e.message}`);
+        finish();
+      }
+    );
+  };
+  const updateStockLegacy = (pid, delta) =>
     setData((d) => {
       const levels = d.stock_levels.map((sl) =>
         sl.product_id === pid

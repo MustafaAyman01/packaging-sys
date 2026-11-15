@@ -223,6 +223,13 @@ async function fetchAllRows(table, orgId) {
   return { data: all, error: null };
 }
 
+// جلب أرصدة المخزون بس (بدل إعادة تحميل كل بيانات المنشأة) — بنستخدمه بعد تعديلات المخزون الذرّية.
+export async function fetchStockLevels(orgId) {
+  const { data, error } = await fetchAllRows("stock_levels", orgId);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function fetchCloudData(orgId) {
   const result = {};
   const keys = Object.keys(SYNC_TABLES);
@@ -377,6 +384,17 @@ function itemLabel(item, tableName) {
     fallbackLabelByTable(item, tableName) ||
     "سجل بيانات"
   );
+}
+// تسجيل في سجل الأنشطة لعمليات بتتم عن طريق RPC مباشرة (مش عن طريق syncTableChange)،
+// عشان نحافظ على نفس الأثر التدقيقي اللي كان موجود قبل التحويل لـ RPC.
+// rows: [{ action, table_name, record_id, details }]
+export function logActivityRows(orgId, userId, rows) {
+  if (!sb || !orgId || !rows?.length) return;
+  sb.from("activity_log")
+    .insert(rows.map((r) => ({ org_id: orgId, user_id: userId || null, ...r })))
+    .then(({ error }) => {
+      if (error) console.error("activity_log insert error", error);
+    });
 }
 export async function syncTableChange(orgId, key, oldItems, newItems, userId) {
   const cfg = SYNC_TABLES[key];
