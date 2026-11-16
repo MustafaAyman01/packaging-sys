@@ -5,7 +5,6 @@ import { ProductPicker } from "../components/ProductPicker";
 import { PartyPicker } from "../components/PartyPicker";
 import { PAYMENT_METHODS } from "../constants/labels";
 import { printReceipt } from "../features/print/printReceipt";
-
 const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
 const DEFAULT_TAX_RATE = 0;
 
