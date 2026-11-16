@@ -110,10 +110,10 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setCart([]);
   };
 
-  const lineTotal = (l) => l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
+    const lineTotal = (l) => l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
   const cartSubtotal = cart.reduce((s, l) => s + lineTotal(l), 0);
-  const cartTax = cartSubtotal * (DEFAULT_TAX_RATE / 100);
-  const cartTotal = cartSubtotal + cartTax;
+  const cartTax = 0; // تم إلغاء الضريبة نهائياً
+  const cartTotal = cartSubtotal; // الإجمالي يساوي الصافي بدون ضريبة
 
   // ---------- الدفع وإتمام البيع ----------
   const [showPay, setShowPay] = useState(false);
@@ -769,10 +769,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 <span>الضريبة ({DEFAULT_TAX_RATE}%)</span>
                 <span>{fc(cartTax)}</span>
               </div>
-              <div className="totals-row total">
-                <span>الإجمالي</span>
-                <span style={{ color: "var(--accent)", fontSize: 20 }}>{fc(cartTotal)}</span>
-              </div>
+            
             </div>
             <button
               className="btn btn-primary"
@@ -810,10 +807,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                   <span>الإجمالي قبل الضريبة</span>
                   <span>{fc(cartSubtotal)}</span>
                 </div>
-                <div className="totals-row">
-                  <span>الضريبة ({DEFAULT_TAX_RATE}%)</span>
-                  <span>{fc(cartTax)}</span>
-                </div>
+                
                 <div className="totals-row total">
                   <span>الإجمالي المطلوب</span>
                   <span style={{ color: "var(--accent)" }}>{fc(cartTotal)}</span>
