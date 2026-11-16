@@ -7,7 +7,7 @@ import { PAYMENT_METHODS } from "../constants/labels";
 import { printReceipt } from "../features/print/printReceipt";
 
 const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
-const DEFAULT_TAX_RATE = 14;
+const DEFAULT_TAX_RATE = 0;
 
 // Batch 2/3/4 — POS Foundation + Barcode/Cart + Complete Sale.
 export function POS({ org, profile, data, update, toast, myRole, refreshData, setPage }) {
