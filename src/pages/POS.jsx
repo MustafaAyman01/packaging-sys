@@ -9,7 +9,6 @@ import { printReceipt } from "../features/print/printReceipt";
 const DEFAULT_CASH_CLIENT_NAME = "عميل نقدي (بيع سريع)";
 const DEFAULT_TAX_RATE = 0;
 
-// Batch 2/3/4 — POS Foundation + Barcode/Cart + Complete Sale.
 export function POS({ org, profile, data, update, toast, myRole, refreshData, setPage }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
@@ -19,13 +18,11 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
   const [busy, setBusy] = useState(false);
   const [lastClosedBalance, setLastClosedBalance] = useState(null);
 
-  // ---------- Cart ----------
-  const [cart, setCart] = useState([]); // [{product_id, sku, name, quantity, unit_price, discount_percent}]
+  const [cart, setCart] = useState([]);
   const [barcodeValue, setBarcodeValue] = useState("");
   const barcodeRef = useRef(null);
 
   const canEditPrice = ["owner", "admin", "accountant", "sales"].includes(myRole);
-  // نفس صلاحيات شاشة الخزنة الموجودة في القائمة الجانبية — مفيش صلاحية جديدة مخترعة
   const canCloseShift = ["owner", "admin", "accountant"].includes(myRole);
 
   const loadState = async () => {
@@ -58,9 +55,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
   useEffect(() => {
     loadState();
   }, []);
-
-  // الفوكس يفضل على حقل الباركود دايمًا — عشان أي سكانر (USB/Bluetooth بيشتغل
-  // كـ keyboard) يضيف المنتج من غير ما الكاشير يدوس بالماوس خالص
 
   const addProductToCart = (product) => {
     if (!product || !product.is_active) return;
@@ -110,19 +104,18 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setCart([]);
   };
 
-    const lineTotal = (l) => l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
+  const lineTotal = (l) => l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
   const cartSubtotal = cart.reduce((s, l) => s + lineTotal(l), 0);
-  const cartTax = 0; // تم إلغاء الضريبة نهائياً
-  const cartTotal = cartSubtotal; // الإجمالي يساوي الصافي بدون ضريبة
+  const cartTax = 0;
+  const cartTotal = cartSubtotal;
 
-  // ---------- الدفع وإتمام البيع ----------
   const [showPay, setShowPay] = useState(false);
   const [clientId, setClientId] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [payMethod, setPayMethod] = useState("cash");
   const [saleBusy, setSaleBusy] = useState(false);
-  const [pendingInvoiceId, setPendingInvoiceId] = useState(null); // ثابت طول محاولات نفس البيعة (idempotency)
-  const [receipt, setReceipt] = useState(null); // نتيجة RPC بعد نجاح البيع
+  const [pendingInvoiceId, setPendingInvoiceId] = useState(null);
+  const [receipt, setReceipt] = useState(null);
 
   const ensureDefaultCashClient = async () => {
     const existing = data.clients.find((c) => c.name === DEFAULT_CASH_CLIENT_NAME && c.is_active);
@@ -134,7 +127,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
 
   const openPayModal = async () => {
     if (cart.length === 0) return;
-    // تحذير نقص المخزون (UX بس): البيع مسموح دايمًا، والـ RPC بتثبّت المخزون عند صفر
     const shortages = cart
       .map((l) => {
         const sl = data.stock_levels.find((x) => x.product_id === l.product_id);
@@ -154,7 +146,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setClientId(defaultClientId);
     setPaidAmount(String(Math.round(cartTotal * 100) / 100));
     setPayMethod("cash");
-    setPendingInvoiceId(generateId()); // بيتولّد مرة واحدة بس لكل محاولة بيع
+    setPendingInvoiceId(generateId());
     setShowPay(true);
   };
 
@@ -165,7 +157,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
       return;
     }
     const paid = +paidAmount || 0;
-    // المبلغ المسجّل على الفاتورة مايزيدش عن إجماليها — الزيادة هي الباقي للعميل (Change) وبتتعرض بس
     const paidToRecord = Math.min(paid, cartTotal);
     setSaleBusy(true);
     try {
@@ -192,7 +183,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
       setReceipt({
         ...result,
         change: payMethod === "cash" ? Math.max(0, paid - cartTotal) : 0,
-        // لقطة من بنود السلة بالاسم — محتاجينها للطباعة بعد ما نصفّر الكارت
         printItems: cart.map((l) => ({
           name: l.name,
           quantity: l.quantity,
@@ -215,7 +205,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setPendingInvoiceId(null);
   };
 
-  // ---------- تعليق/استرجاع البيع ----------
   const [heldSales, setHeldSales] = useState([]);
   const [showHeld, setShowHeld] = useState(false);
 
@@ -276,7 +265,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     }
   };
 
-  // ---------- المرتجعات ----------
   const [showReturn, setShowReturn] = useState(false);
   const [returnInvoiceQuery, setReturnInvoiceQuery] = useState("");
   const [returnInvoice, setReturnInvoice] = useState(null);
@@ -372,14 +360,10 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     setBusy(false);
   };
 
-  // الفوكس يرجع لحقل الباركود لما يتضاف/يتشال صنف، أو لما مودال يتقفل — مش لما الكاشير بيكتب في
-  // كمية/سعر/خصم (كان بيتسحب منه الفوكس بعد أول رقم لأن الـ effect كان معتمد على الـ cart كله).
   useEffect(() => {
     if (session && !showPay && !showReturn && !showHeld && !receipt) barcodeRef.current?.focus();
   }, [session, cart.length, showPay, showReturn, showHeld, receipt]);
 
-  // ---------- اختصارات الكيبورد ----------
-  // listener واحد بس، وبيقرا آخر نسخة من الحالة والدوال من الـ ref عشان ميمسكش state قديم.
   const shortcutRef = useRef({});
   shortcutRef.current = {
     session, showPay, showReturn, showHeld, receipt, cart, canEditPrice, saleBusy,
@@ -436,61 +420,24 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
 
   if (loading) {
     return (
-      <div
-        style={{
-          padding: 60,
-          textAlign: "center",
-          color: "var(--text3)",
-        }}
-      >
+      <div style={{ padding: 60, textAlign: "center", color: "var(--text3)" }}>
         جاري التحميل...
       </div>
     );
   }
 
-  // ========== بوابة الخزنة: مفيش جلسة مفتوحة ==========
   if (!session) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "60vh",
-        }}
-      >
-        <div
-          className="card"
-          style={{
-            maxWidth: 420,
-            width: "100%",
-          }}
-        >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div className="card" style={{ maxWidth: 420, width: "100%" }}>
           <div className="card-body">
-            <div
-              className="empty-state"
-              style={{
-                padding: 20,
-              }}
-            >
+            <div className="empty-state" style={{ padding: 20 }}>
               <div className="icon">🗄️</div>
               <p style={{ fontWeight: 600, fontSize: 16 }}>لازم تفتح الخزنة الأول</p>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--text3)",
-                  marginTop: 4,
-                }}
-              >
+              <p style={{ fontSize: 13, color: "var(--text3)", marginTop: 4 }}>
                 شاشة البيع محتاجة جلسة خزنة مفتوحة عشان تقدر تسجّل أي بيع نقدي
               </p>
-              <button
-                className="btn btn-primary"
-                style={{
-                  marginTop: 16,
-                }}
-                onClick={openOpenModal}
-              >
+              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={openOpenModal}>
                 + فتح الخزنة وبدء البيع
               </button>
             </div>
@@ -502,9 +449,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
             <div className="modal">
               <div className="modal-header">
                 <span className="modal-title">فتح الخزنة</span>
-                <button className="close-btn" onClick={() => setShowOpen(false)}>
-                  ×
-                </button>
+                <button className="close-btn" onClick={() => setShowOpen(false)}>×</button>
               </div>
               <div className="modal-body">
                 <div className="form-group">
@@ -516,13 +461,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                     onChange={(e) => setOpeningBalance(e.target.value)}
                   />
                   {lastClosedBalance != null && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text3)",
-                        marginTop: 4,
-                      }}
-                    >
+                    <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
                       آخر رصيد إقفال كان {fc(lastClosedBalance)} — تم ملؤه تلقائيًا
                     </div>
                   )}
@@ -533,9 +472,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowOpen(false)}>
-                  إلغاء
-                </button>
+                <button className="btn btn-secondary" onClick={() => setShowOpen(false)}>إلغاء</button>
                 <button className="btn btn-primary" disabled={busy} onClick={submitOpen}>
                   {busy ? "جاري الفتح..." : "فتح الخزنة"}
                 </button>
@@ -547,67 +484,19 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
     );
   }
 
-  // ========== جلسة مفتوحة: هيكل شاشة الـ POS ==========
   return (
     <div>
-      <div
-        className="card"
-        style={{
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 18px",
-            flexWrap: "wrap",
-            gap: 10,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: 15,
-              }}
-            >
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>
               🧾 {org?.name_ar || org?.name || "نقطة البيع"}
             </div>
-            <span className="tag">
-              🟢 الخزنة مفتوحة — من {fd(session.opened_at)}
-            </span>
-            <span
-              style={{
-                fontSize: 13,
-                color: "var(--text3)",
-              }}
-            >
-              الكاشير: {profile?.full_name || "—"}
-            </span>
-            <span
-              style={{
-                fontSize: 12,
-                color: "var(--text3)",
-              }}
-            >
-              جلسة #{session.id.slice(0, 8)}
-            </span>
+            <span className="tag">🟢 الخزنة مفتوحة — من {fd(session.opened_at)}</span>
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>الكاشير: {profile?.full_name || "—"}</span>
+            <span style={{ fontSize: 12, color: "var(--text3)" }}>جلسة #{session.id.slice(0, 8)}</span>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-            }}
-          >
+          <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-secondary btn-sm" disabled={cart.length === 0} onClick={holdSale}>
               ⏸️ تعليق البيع
             </button>
@@ -629,13 +518,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.6fr 1fr",
-          gap: 16,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
         <div className="card">
           <div className="card-body">
             <form onSubmit={handleBarcodeSubmit} style={{ marginBottom: 14 }}>
@@ -645,11 +528,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 value={barcodeValue}
                 onChange={(e) => setBarcodeValue(e.target.value)}
                 placeholder="📷 امسح الباركود أو اكتب الكود واضغط Enter"
-                style={{
-                  fontSize: 20,
-                  padding: "14px 16px",
-                  fontWeight: 600,
-                }}
+                style={{ fontSize: 20, padding: "14px 16px", fontWeight: 600 }}
               />
             </form>
 
@@ -675,7 +554,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
 
             <table
               onKeyDown={(e) => {
-                // Enter بعد تعديل كمية/سعر/خصم = رجوع للباركود عشان الصنف الجاي
                 if (e.key === "Enter" && e.target.tagName === "INPUT") {
                   e.preventDefault();
                   barcodeRef.current?.focus();
@@ -761,15 +639,10 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
           </div>
           <div className="card-body">
             <div className="totals-box">
-              <div className="totals-row">
-                <span>الإجمالي قبل الضريبة</span>
-                <span>{fc(cartSubtotal)}</span>
+              <div className="totals-row total">
+                <span>الإجمالي</span>
+                <span style={{ color: "var(--accent)", fontSize: 20 }}>{fc(cartTotal)}</span>
               </div>
-              <div className="totals-row">
-                <span>الضريبة ({DEFAULT_TAX_RATE}%)</span>
-                <span>{fc(cartTax)}</span>
-              </div>
-            
             </div>
             <button
               className="btn btn-primary"
@@ -788,9 +661,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">الدفع وإتمام البيع</span>
-              <button className="close-btn" onClick={() => setShowPay(false)}>
-                ×
-              </button>
+              <button className="close-btn" onClick={() => setShowPay(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -803,11 +674,6 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 />
               </div>
               <div className="totals-box" style={{ marginBottom: 14 }}>
-                <div className="totals-row">
-                  <span>الإجمالي قبل الضريبة</span>
-                  <span>{fc(cartSubtotal)}</span>
-                </div>
-                
                 <div className="totals-row total">
                   <span>الإجمالي المطلوب</span>
                   <span style={{ color: "var(--accent)" }}>{fc(cartTotal)}</span>
@@ -818,9 +684,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                   <label>طريقة الدفع</label>
                   <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
                     {Object.entries(PAYMENT_METHODS).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
+                      <option key={k} value={k}>{v}</option>
                     ))}
                   </select>
                 </div>
@@ -830,31 +694,18 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 </div>
               </div>
               {payMethod === "cash" && +paidAmount > cartTotal && (
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "var(--green)",
-                  }}
-                >
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--green)" }}>
                   الباقي للعميل (Change): {fc(+paidAmount - cartTotal)}
                 </div>
               )}
               {+paidAmount < cartTotal && (
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--text3)",
-                  }}
-                >
+                <div style={{ fontSize: 13, color: "var(--text3)" }}>
                   متبقي على العميل: {fc(cartTotal - (+paidAmount || 0))}
                 </div>
               )}
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowPay(false)}>
-                رجوع
-              </button>
+              <button className="btn btn-secondary" onClick={() => setShowPay(false)}>رجوع</button>
               <button className="btn btn-primary" disabled={saleBusy} onClick={completeSale}>
                 {saleBusy ? "جاري إتمام البيع..." : "✅ إتمام البيع"}
               </button>
@@ -870,16 +721,9 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
               <span className="modal-title">تمت عملية البيع ✓</span>
             </div>
             <div className="modal-body">
-              <div
-                style={{
-                  textAlign: "center",
-                  marginBottom: 14,
-                }}
-              >
+              <div style={{ textAlign: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 40 }}>✅</div>
-                <div style={{ fontWeight: 700, fontSize: 18 }}>
-                  فاتورة {receipt.invoice?.invoice_number}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 18 }}>فاتورة {receipt.invoice?.invoice_number}</div>
               </div>
               <div className="totals-box">
                 <div className="totals-row">
@@ -905,9 +749,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
               >
                 🖨️ طباعة إيصال
               </button>
-              <button className="btn btn-primary" onClick={startNewSale}>
-                بيعة جديدة
-              </button>
+              <button className="btn btn-primary" onClick={startNewSale}>بيعة جديدة</button>
             </div>
           </div>
         </div>
@@ -918,9 +760,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">📋 البيعات المعلّقة</span>
-              <button className="close-btn" onClick={() => setShowHeld(false)}>
-                ×
-              </button>
+              <button className="close-btn" onClick={() => setShowHeld(false)}>×</button>
             </div>
             <div className="modal-body">
               {heldSales.length === 0 && (
@@ -952,21 +792,15 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                       <div style={{ fontSize: 11, color: "var(--text3)" }}>{fd(h.created_at)}</div>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => resumeHeldSale(h)}>
-                        استرجاع
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => deleteHeldSale(h)}>
-                        حذف
-                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => resumeHeldSale(h)}>استرجاع</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteHeldSale(h)}>حذف</button>
                     </div>
                   </div>
                 );
               })}
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowHeld(false)}>
-                إغلاق
-              </button>
+              <button className="btn btn-secondary" onClick={() => setShowHeld(false)}>إغلاق</button>
             </div>
           </div>
         </div>
@@ -977,9 +811,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">↩️ مرتجع فاتورة</span>
-              <button className="close-btn" onClick={() => setShowReturn(false)}>
-                ×
-              </button>
+              <button className="close-btn" onClick={() => setShowReturn(false)}>×</button>
             </div>
             <div className="modal-body">
               {!returnInvoice ? (
@@ -992,24 +824,12 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                     placeholder="اكتب رقم الفاتورة (INV-...)"
                   />
                   {matchingInvoices.length > 0 && (
-                    <div
-                      style={{
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        marginTop: 4,
-                        overflow: "hidden",
-                      }}
-                    >
+                    <div style={{ border: "1px solid var(--border)", borderRadius: 8, marginTop: 4, overflow: "hidden" }}>
                       {matchingInvoices.map((inv) => (
                         <div
                           key={inv.id}
                           onClick={() => selectReturnInvoice(inv)}
-                          style={{
-                            padding: "8px 12px",
-                            cursor: "pointer",
-                            borderBottom: "1px solid var(--border)",
-                            fontSize: 13,
-                          }}
+                          style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid var(--border)", fontSize: 13 }}
                         >
                           <strong>{inv.invoice_number}</strong> — {fc(inv.total_amount)} — {fd(inv.invoice_date)}
                         </div>
@@ -1019,13 +839,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                 </div>
               ) : (
                 <>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--text3)",
-                      marginBottom: 10,
-                    }}
-                  >
+                  <div style={{ fontSize: 13, color: "var(--text3)", marginBottom: 10 }}>
                     فاتورة {returnInvoice.invoice_number} — إجمالي {fc(returnInvoice.total_amount)}
                   </div>
                   <table>
@@ -1078,9 +892,7 @@ export function POS({ org, profile, data, update, toast, myRole, refreshData, se
                   رجوع لاختيار فاتورة تانية
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={() => setShowReturn(false)}>
-                إلغاء
-              </button>
+              <button className="btn btn-secondary" onClick={() => setShowReturn(false)}>إلغاء</button>
               {returnInvoice && (
                 <button className="btn btn-primary" disabled={returnBusy} onClick={submitReturn}>
                   {returnBusy ? "جاري التسجيل..." : "✅ تأكيد المرتجع"}
