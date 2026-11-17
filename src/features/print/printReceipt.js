@@ -72,8 +72,12 @@ export function printReceipt(invoice, items, org) {
   ${rows}
 
   <div class="divider"></div>
-  <div class="totals-row"><span>الإجمالي قبل الضريبة</span><span>${fc(invoice.subtotal)}</span></div>
-  <div class="totals-row"><span>الضريبة</span><span>${fc(invoice.tax_amount)}</span></div>
+  ${
+    (invoice.tax_amount || 0) > 0.005
+      ? `<div class="totals-row"><span>الإجمالي قبل الضريبة</span><span>${fc(invoice.subtotal)}</span></div>
+  <div class="totals-row"><span>الضريبة</span><span>${fc(invoice.tax_amount)}</span></div>`
+      : ""
+  }
   <div class="grand-total"><span>الإجمالي</span><span>${fc(invoice.total_amount)}</span></div>
   <div class="totals-row"><span>المدفوع</span><span>${fc(invoice.paid_amount)}</span></div>
   ${remaining > 0.01 ? `<div class="totals-row"><span>المتبقي</span><span>${fc(remaining)}</span></div>` : ""}
